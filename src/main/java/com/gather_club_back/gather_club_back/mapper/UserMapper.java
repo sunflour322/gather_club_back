@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class UserMapper {
-    public UserResponse toUserResponse(User user){
+    public UserResponse toUserResponse(User user) {
         return new UserResponse()
                 .setUsername(user.getUsername())
                 .setEmail(user.getEmail())
@@ -19,6 +19,24 @@ public class UserMapper {
                 .setIsVerified(user.getIsVerified())
                 .setVerificationToken(user.getVerificationToken())
                 .setResetToken(user.getResetToken())
-                .setResetTokenExpires(user.getResetTokenExpires());
+                .setResetTokenExpires(user.getResetTokenExpires())
+                .setRole(user.getRole());
+    }
+
+    public User toUser(UserResponse userResponse) {
+        return new User()
+                .setUsername(userResponse.getUsername())
+                .setEmail(userResponse.getEmail())
+                .setPasswordHash(userResponse.getPasswordHash())
+                .setPhoneNumber(userResponse.getPhoneNumber())
+                .setAvatarUrl(userResponse.getAvatarUrl())
+                .setBio(userResponse.getBio())
+                .setCreatedAt(userResponse.getCreatedAt())
+                .setLastActive(userResponse.getLastActive())
+                .setIsVerified(userResponse.getIsVerified())
+                .setVerificationToken(userResponse.getVerificationToken())
+                .setResetToken(userResponse.getResetToken())
+                .setResetTokenExpires(userResponse.getResetTokenExpires())
+                .setRole(userResponse.getRole());
     }
 }

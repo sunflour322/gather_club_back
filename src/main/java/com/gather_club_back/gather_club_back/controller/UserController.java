@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("users")
+@RequestMapping("/users")
 @RequiredArgsConstructor
 public class UserController {
 
@@ -21,7 +21,7 @@ public class UserController {
     public UserResponse getUser(@PathVariable Integer userId){
         return userService.getUser(userId);
     }
-    @GetMapping("test")
+    @GetMapping("/test")
     public String test() {
         return "OK";
     }
