@@ -5,6 +5,9 @@ import jakarta.persistence.Column;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+
 @Data
 @Accessors(chain = true)
 public class UserResponse {
@@ -27,10 +30,10 @@ public class UserResponse {
     private String bio;
 
     @Column(name = "created_at")
-    private String createdAt;
+    private LocalDateTime createdAt;
 
     @Column(name = "last_active")
-    private String lastActive;
+    private Instant lastActive;
 
     @Column(name = "is_verified")
     private Boolean isVerified;
@@ -42,7 +45,7 @@ public class UserResponse {
     private String resetToken;
 
     @Column(name = "reset_token_expires")
-    private String resetTokenExpires;
+    private Instant resetTokenExpires;
 
     private Role role;
 }

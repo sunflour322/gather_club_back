@@ -10,6 +10,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -43,10 +45,10 @@ public class User implements UserDetails {
     private String bio;
 
     @Column(name = "created_at")
-    private String createdAt;
+    private LocalDateTime createdAt;
 
     @Column(name = "last_active")
-    private String lastActive;
+    private Instant lastActive;
 
     @Column(name = "is_verified")
     private Boolean isVerified;
@@ -58,7 +60,7 @@ public class User implements UserDetails {
     private String resetToken;
 
     @Column(name = "reset_token_expires")
-    private String resetTokenExpires;
+    private Instant resetTokenExpires;
 
     @Enumerated(EnumType.STRING)
     private Role role;
