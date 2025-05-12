@@ -1,6 +1,7 @@
 #spring.application.name=gather_club_back
 server:
   port: 8080
+  address: 0.0.0.0
 spring:
   datasource:
     url: jdbc:postgresql://212.67.8.92:5432/gather_club_db
