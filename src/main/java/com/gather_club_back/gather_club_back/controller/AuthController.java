@@ -71,7 +71,7 @@ public class AuthController {
                 .setPasswordHash(passwordEncoder.encode(registerRequest.getPasswordHash())) // Теперь password не null
                 .setRole(Role.ROLE_USER)
                 .setCreatedAt(LocalDateTime.now())
-                .setIsVerified(false);
+                .setIsVerified(true);
 
         userRepository.save(user);
         return ResponseEntity.ok(userMapper.toUserResponse(user));
