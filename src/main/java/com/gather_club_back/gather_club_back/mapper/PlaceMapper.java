@@ -15,6 +15,7 @@ public class PlaceMapper {
                 .setLongitude(place.getLongitude())
                 .setAddress(place.getAddress())
                 .setCategoryId(place.getCategoryId() != null ? place.getCategoryId() : null)
-                .setPopularity(place.getPopularity());
+                .setPopularity(place.getPopularity())
+                .setImageUrl(place.getImageUrl());
     }
 }

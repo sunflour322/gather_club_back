@@ -16,3 +16,6 @@ logging:
     root: INFO
     org.springframework.security: DEBUG
     com.gather_club_back: DEBUG
+yandex.disk.access-token: y0__xC6zKySBhj85jcg8pfClRMw_u_z2wehf89XTSKlwjybF0fjHWc-1Yvb5g
+yandex.disk.api-url: https://cloud-api.yandex.net/v1/disk
+yandex.disk.base-path: /GatherClub

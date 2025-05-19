@@ -10,7 +10,7 @@ import java.util.List;
 
 @Repository
 public interface PlaceRepository extends JpaRepository<Place, Integer> {
-    @Query("SELECT p FROM InterestingPlace p " +
+    @Query("SELECT p FROM Place p " +
             "WHERE p.latitude BETWEEN :minLat AND :maxLat " +
             "AND p.longitude BETWEEN :minLng AND :maxLng " +
             "AND p.isApproved = true")

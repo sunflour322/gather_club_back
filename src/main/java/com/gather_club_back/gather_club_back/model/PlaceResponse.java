@@ -32,4 +32,7 @@ public class PlaceResponse {
     private Boolean isApproved;
 
     private Integer popularity;
+
+    @Column(name = "image_url")
+    private String imageUrl;
 }

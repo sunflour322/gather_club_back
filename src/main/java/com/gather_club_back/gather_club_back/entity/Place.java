@@ -41,4 +41,7 @@ public class Place {
 
     private Integer popularity;
 
+    @Column(name = "image_url")
+    private String imageUrl;
+
 }
