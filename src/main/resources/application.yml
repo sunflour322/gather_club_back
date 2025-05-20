@@ -10,7 +10,7 @@ spring:
     driver-class-name: org.postgresql.Driver
 jwt:
   secret: "kdNyxKDfpa/BkcEOj8i9JcvZoLaiE6H+pR/OKURQTHoYgea/8DVyuis37n2j2vo2/7GULXclcMKnP7U4+6FBB4g="
-  expiration: 86400000
+  expiration: 864000000
 logging:
   level:
     root: INFO

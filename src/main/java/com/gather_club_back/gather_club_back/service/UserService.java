@@ -14,4 +14,5 @@ public interface UserService {
     Boolean existsByUsername(String username);
     UserResponse updateUserAvatar(Integer userId, MultipartFile avatarFile);
     String getAvatarUrl(Integer userId);
+    Integer getUserId();
 }

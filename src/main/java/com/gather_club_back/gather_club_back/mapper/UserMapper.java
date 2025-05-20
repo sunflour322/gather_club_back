@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 public class UserMapper {
     public UserResponse toUserResponse(User user) {
         return new UserResponse()
+                .setUserId(user.getUserId())
                 .setUsername(user.getUsername())
                 .setEmail(user.getEmail())
                 .setPasswordHash(user.getPasswordHash())
@@ -25,6 +26,7 @@ public class UserMapper {
 
     public User toUser(UserResponse userResponse) {
         return new User()
+                .setUserId(userResponse.getUserId())
                 .setUsername(userResponse.getUsername())
                 .setEmail(userResponse.getEmail())
                 .setPasswordHash(userResponse.getPasswordHash())

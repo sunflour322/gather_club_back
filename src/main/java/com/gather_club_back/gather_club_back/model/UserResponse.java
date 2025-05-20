@@ -11,6 +11,8 @@ import java.time.LocalDateTime;
 @Data
 @Accessors(chain = true)
 public class UserResponse {
+    @Column(name = "user_id")
+    private Integer userId;
 
     @Column(nullable = false, unique = true)
     private String username;
