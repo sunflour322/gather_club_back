@@ -4,7 +4,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 
-public interface YandexDiskService {
+public interface StorageService {
     String uploadImage(MultipartFile file, String path) throws IOException;
     void deleteImage(String filePath) throws IOException;
     String getPublicUrl(String filePath) throws IOException;

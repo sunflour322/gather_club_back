@@ -5,7 +5,7 @@ import com.gather_club_back.gather_club_back.mapper.UserMapper;
 import com.gather_club_back.gather_club_back.model.UserResponse;
 import com.gather_club_back.gather_club_back.repository.UserRepository;
 import com.gather_club_back.gather_club_back.service.UserService;
-import com.gather_club_back.gather_club_back.service.YandexDiskService;
+import com.gather_club_back.gather_club_back.service.StorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -28,7 +28,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
-    private final YandexDiskService yandexDiskService;
+    private final StorageService storageService;
 
     @Override
     @Transactional
@@ -41,7 +41,7 @@ public class UserServiceImpl implements UserService {
         try {
             // Удаляем старый аватар, если он есть
             if (user.getAvatarUrl() != null) {
-                yandexDiskService.deleteImage(user.getAvatarUrl());
+                storageService.deleteImage(user.getAvatarUrl());
                 log.info("Deleted old avatar for user {}", userId);
             }
 
@@ -50,7 +50,7 @@ public class UserServiceImpl implements UserService {
             String path = "users/" + userId + "/avatar/" + filename;
 
             // Загружаем новый аватар
-            String avatarUrl = yandexDiskService.uploadImage(avatarFile, path);
+            String avatarUrl = storageService.uploadImage(avatarFile, path);
             log.info("Uploaded new avatar for user {} to {}", userId, avatarUrl);
 
             // Обновляем пользователя

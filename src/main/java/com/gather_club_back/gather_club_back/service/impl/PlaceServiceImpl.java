@@ -5,7 +5,7 @@ import com.gather_club_back.gather_club_back.mapper.PlaceMapper;
 import com.gather_club_back.gather_club_back.model.PlaceResponse;
 import com.gather_club_back.gather_club_back.repository.PlaceRepository;
 import com.gather_club_back.gather_club_back.service.PlaceService;
-import com.gather_club_back.gather_club_back.service.YandexDiskService;
+import com.gather_club_back.gather_club_back.service.StorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,7 +25,7 @@ public class PlaceServiceImpl implements PlaceService {
 
     private final PlaceRepository placeRepository;
     private final PlaceMapper placeMapper;
-    private final YandexDiskService yandexDiskService;
+    private final StorageService storageService;
 
     @Override
     public List<PlaceResponse> getNearbyPlaces(double latitude, double longitude, double radiusKm) {
@@ -57,14 +57,14 @@ public class PlaceServiceImpl implements PlaceService {
         try {
             // Удаляем старое изображение, если есть
             if (place.getImageUrl() != null) {
-                yandexDiskService.deleteImage(place.getImageUrl());
+                storageService.deleteImage(place.getImageUrl());
                 log.info("Deleted old image for place {}", placeId);
             }
 
             // Загружаем новое изображение
             String filename = generateFilename(imageFile.getOriginalFilename(), placeId);
             String path = "places/" + placeId + "/" + filename;
-            String imageUrl = yandexDiskService.uploadImage(imageFile, path);
+            String imageUrl = storageService.uploadImage(imageFile, path);
             log.info("Uploaded new image for place {} to {}", placeId, imageUrl);
 
             // Обновляем место
