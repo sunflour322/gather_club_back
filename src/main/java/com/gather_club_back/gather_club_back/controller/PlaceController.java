@@ -1,8 +1,12 @@
 package com.gather_club_back.gather_club_back.controller;
 
+import com.gather_club_back.gather_club_back.model.PlaceImageResponse;
 import com.gather_club_back.gather_club_back.model.PlaceResponse;
+import com.gather_club_back.gather_club_back.service.PlaceImageService;
 import com.gather_club_back.gather_club_back.service.PlaceService;
+import com.gather_club_back.gather_club_back.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -14,6 +18,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PlaceController {
     private final PlaceService placeService;
+    private final PlaceImageService placeImageService;
+    private final UserService userService;
 
     @GetMapping("/nearby")
     public List<PlaceResponse> getNearbyPlaces(
@@ -33,5 +39,29 @@ public class PlaceController {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+    @GetMapping("/{placeId}/images")
+    public ResponseEntity<List<PlaceImageResponse>> getPlaceImages(@PathVariable Integer placeId) {
+        return ResponseEntity.ok(placeImageService.getPlaceImages(placeId));
+    }
+
+    @PostMapping("/{placeId}/images/add")
+    public ResponseEntity<PlaceImageResponse> uploadPlaceImage(
+            @PathVariable Integer placeId,
+            @RequestParam("images") MultipartFile imageFile) throws IOException {
+
+        Integer userId = userService.getUserId();
+        return ResponseEntity.ok(
+                placeImageService.uploadPlaceImage(placeId, imageFile, userId));
+    }
+
+    @PostMapping("/{placeId}/images/{imageId}/rate")
+    public ResponseEntity<Void> rateImage(
+            @PathVariable Integer placeId,
+            @PathVariable Integer imageId,
+            @RequestParam Boolean isLike) {
+
+        placeImageService.rateImage(imageId, isLike);
+        return ResponseEntity.ok().build();
     }
 }
