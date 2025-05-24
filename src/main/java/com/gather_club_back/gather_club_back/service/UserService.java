@@ -4,6 +4,7 @@ import com.gather_club_back.gather_club_back.entity.User;
 import com.gather_club_back.gather_club_back.model.UserResponse;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface UserService {
@@ -15,4 +16,5 @@ public interface UserService {
     UserResponse updateUserAvatar(Integer userId, MultipartFile avatarFile);
     String getAvatarUrl(Integer userId);
     Integer getUserId();
+    List<UserResponse> getAllUsers();
 }

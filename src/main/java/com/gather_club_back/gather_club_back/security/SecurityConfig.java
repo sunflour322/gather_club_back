@@ -43,21 +43,19 @@ public class SecurityConfig {
                         // Публичные эндпоинты
                         .requestMatchers(
                                 "/auth/**",
-                                "/users/*/avatar",
-                                "/v3/api-docs/**",
+                                "/api-docs/**",
                                 "/swagger-ui/**"
                         ).permitAll()
 
                         // Защищённые эндпоинты
                         .requestMatchers("/places/**").authenticated()
+                        .requestMatchers("/friendships/**").authenticated()
                         .requestMatchers("/users/**").authenticated()
 
-                        // Все остальные запросы запрещены по умолчанию
+                        // Разрешаем все остальные запросы (можно изменить на denyAll() если нужно)
                         .anyRequest().denyAll()
                 ).addFilterBefore(new JwtAuthenticationFilter(tokenProvider, userDetailsService),
-                UsernamePasswordAuthenticationFilter.class);
-
-
+                        UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -71,10 +69,12 @@ public class SecurityConfig {
         configuration.setAllowedHeaders(List.of("*")); // Все заголовки
         configuration.setExposedHeaders(List.of(
                 "Authorization", "Content-Disposition")); // Какие заголовки доступны клиенту
-        configuration.setAllowCredentials(true); // Разрешаем credentials
+        configuration.setAllowCredentials(false); // Отключаем credentials, так как используем "*" для origins
+
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration); // Применяем ко всем путям
+
         return source;
     }
 
