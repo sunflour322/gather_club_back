@@ -109,4 +109,50 @@ public class FriendshipServiceImpl implements FriendshipService {
                 .map(friendshipMapper::toModel)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FriendshipResponse> getAllRequests(Integer userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+        return friendshipRepository.findAllRequests(user)
+                .stream()
+                .map(friendshipMapper::toModel)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FriendshipResponse> getOutgoingRequests(Integer userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+        return friendshipRepository.findOutgoingRequests(user)
+                .stream()
+                .map(friendshipMapper::toModel)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FriendshipResponse> getIncomingRequests(Integer userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+        return friendshipRepository.findIncomingRequests(user)
+                .stream()
+                .map(friendshipMapper::toModel)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public FriendshipResponse getFriendshipStatus(Integer userId, Integer friendId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+        User friend = userRepository.findById(friendId)
+                .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+                
+        return friendshipRepository.findFriendshipBetweenUsers(user, friend)
+                .map(friendshipMapper::toModel)
+                .orElse(null);
+    }
 } 

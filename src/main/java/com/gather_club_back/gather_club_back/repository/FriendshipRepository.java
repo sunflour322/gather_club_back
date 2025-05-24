@@ -15,9 +15,18 @@ public interface FriendshipRepository extends JpaRepository<Friendship, Integer>
     @Query("SELECT f FROM Friendship f WHERE (f.user1 = :user AND f.user2 = :friend) OR (f.user1 = :friend AND f.user2 = :user)")
     Optional<Friendship> findFriendshipBetweenUsers(User user, User friend);
     
-    @Query("SELECT f FROM Friendship f WHERE (f.user1 = :user OR f.user2 = :user) AND f.status = 'ACCEPTED'")
+    @Query("SELECT f FROM Friendship f WHERE (f.user1 = :user OR f.user2 = :user) AND f.status = 'accepted'")
     List<Friendship> findAllAcceptedFriendships(User user);
     
-    @Query("SELECT f FROM Friendship f WHERE f.user2 = :user AND f.status = 'PENDING'")
+    @Query("SELECT f FROM Friendship f WHERE f.user2 = :user AND f.status = 'pending'")
     List<Friendship> findAllPendingFriendRequests(User user);
+
+    @Query("SELECT f FROM Friendship f WHERE (f.user1 = :user OR f.user2 = :user) AND f.status = 'pending'")
+    List<Friendship> findAllRequests(User user);
+
+    @Query("SELECT f FROM Friendship f WHERE f.user1 = :user AND f.status = 'pending'")
+    List<Friendship> findOutgoingRequests(User user);
+
+    @Query("SELECT f FROM Friendship f WHERE f.user2 = :user AND f.status = 'pending'")
+    List<Friendship> findIncomingRequests(User user);
 } 
