@@ -1,9 +1,9 @@
 package com.gather_club_back.gather_club_back.repository;
 
-import com.gather_club_back.gather_club_back.entity.PlaceCategory;
+import com.gather_club_back.gather_club_back.entity.Meetup;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
- 
+
 @Repository
-public interface PlaceCategoryRepository extends JpaRepository<PlaceCategory, Integer> {
+public interface MeetupRepository extends JpaRepository<Meetup, Integer> {
 } 
