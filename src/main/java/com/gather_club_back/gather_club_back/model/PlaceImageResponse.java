@@ -1,6 +1,5 @@
 package com.gather_club_back.gather_club_back.model;
 
-
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -12,7 +11,8 @@ public class PlaceImageResponse {
     private Integer imageId;
     private Integer placeId;
     private String imageUrl;
-    private Integer uploadedBy;
+    private Integer uploadedById;
+    private String uploaderUsername;
     private LocalDateTime uploadedAt;
     private Boolean isApproved;
     private Integer likes;
