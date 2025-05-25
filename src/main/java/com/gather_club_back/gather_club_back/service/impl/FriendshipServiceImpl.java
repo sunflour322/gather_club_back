@@ -9,6 +9,7 @@ import com.gather_club_back.gather_club_back.repository.UserRepository;
 import com.gather_club_back.gather_club_back.service.FriendshipService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +17,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FriendshipServiceImpl implements FriendshipService {
@@ -154,5 +156,36 @@ public class FriendshipServiceImpl implements FriendshipService {
         return friendshipRepository.findFriendshipBetweenUsers(user, friend)
                 .map(friendshipMapper::toModel)
                 .orElse(null);
+    }
+
+    @Override
+    @Transactional
+    public void deleteFriend(Integer userId, Integer friendId) {
+        log.info("Начало процесса удаления дружбы между пользователями {} и {}", userId, friendId);
+        
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+        log.info("Найден пользователь с ID: {}", userId);
+        
+        User friend = userRepository.findById(friendId)
+                .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+        log.info("Найден друг с ID: {}", friendId);
+
+        Friendship friendship = friendshipRepository.findFriendshipBetweenUsers(user, friend)
+                .orElseThrow(() -> new EntityNotFoundException("Дружба не найдена"));
+        log.info("Найдена запись о дружбе с ID: {}, статус: {}", friendship.getFriendshipId(), friendship.getStatus());
+
+        if (!"accepted".equals(friendship.getStatus())) {
+            log.error("Попытка удалить дружбу с неверным статусом: {}", friendship.getStatus());
+            throw new IllegalStateException("Невозможно удалить дружбу, так как она не подтверждена");
+        }
+
+        try {
+            friendshipRepository.delete(friendship);
+            log.info("Дружба успешно удалена");
+        } catch (Exception e) {
+            log.error("Ошибка при удалении дружбы: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 } 
