@@ -13,4 +13,5 @@ public interface FriendshipService {
     List<FriendshipResponse> getOutgoingRequests(Integer userId);
     List<FriendshipResponse> getIncomingRequests(Integer userId);
     FriendshipResponse getFriendshipStatus(Integer userId, Integer friendId);
+    void deleteFriend(Integer userId, Integer friendId);
 } 

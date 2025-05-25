@@ -72,4 +72,12 @@ public class FriendshipController {
             @PathVariable Integer friendId) {
         return ResponseEntity.ok(friendshipService.getFriendshipStatus(userId, friendId));
     }
+
+    @DeleteMapping("/{userId}/friends/{friendId}")
+    public ResponseEntity<Void> deleteFriend(
+            @PathVariable Integer userId,
+            @PathVariable Integer friendId) {
+        friendshipService.deleteFriend(userId, friendId);
+        return ResponseEntity.ok().build();
+    }
 } 
