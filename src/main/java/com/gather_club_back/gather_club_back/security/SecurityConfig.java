@@ -54,6 +54,7 @@ public class SecurityConfig {
                         .requestMatchers("/user-places/**").authenticated()
                         .requestMatchers("/place-images/**").authenticated()
                         .requestMatchers("/meetups/**").authenticated()
+                        .requestMatchers("/users/{userId}/location/**").authenticated()
 
                         // Разрешаем все остальные запросы (можно изменить на denyAll() если нужно)
                         .anyRequest().denyAll()
