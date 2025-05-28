@@ -16,57 +16,39 @@ public class MeetupController {
 
     private final MeetupService meetupService;
 
-    @PostMapping("/{userId}")
-    public ResponseEntity<MeetupResponse> createMeetup(
-            @PathVariable Integer userId,
-            @RequestBody MeetupRequest request) {
-        return ResponseEntity.ok(meetupService.createMeetup(userId, request));
+    @PostMapping
+    public ResponseEntity<MeetupResponse> createMeetup(@RequestBody MeetupRequest request) {
+        return ResponseEntity.ok(meetupService.createMeetup(request));
     }
 
-    @PutMapping("/{userId}/{meetupId}")
-    public ResponseEntity<MeetupResponse> updateMeetup(
-            @PathVariable Integer userId,
-            @PathVariable Integer meetupId,
-            @RequestBody MeetupRequest request) {
-        return ResponseEntity.ok(meetupService.updateMeetup(userId, meetupId, request));
+    @GetMapping("/{meetupId}")
+    public ResponseEntity<MeetupResponse> getMeetup(@PathVariable Integer meetupId) {
+        return ResponseEntity.ok(meetupService.getMeetup(meetupId));
     }
 
-    @DeleteMapping("/{userId}/{meetupId}")
-    public ResponseEntity<Void> deleteMeetup(
-            @PathVariable Integer userId,
-            @PathVariable Integer meetupId) {
-        meetupService.deleteMeetup(userId, meetupId);
-        return ResponseEntity.ok().build();
-    }
-
-    @GetMapping("/{userId}/{meetupId}")
-    public ResponseEntity<MeetupResponse> getMeetup(
-            @PathVariable Integer userId,
-            @PathVariable Integer meetupId) {
-        return ResponseEntity.ok(meetupService.getMeetup(userId, meetupId));
-    }
-
-    @GetMapping("/{userId}")
-    public ResponseEntity<List<MeetupResponse>> getUserMeetups(
-            @PathVariable Integer userId) {
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<MeetupResponse>> getUserMeetups(@PathVariable Integer userId) {
         return ResponseEntity.ok(meetupService.getUserMeetups(userId));
     }
 
-    @PostMapping("/{userId}/{meetupId}/invite")
+    @PostMapping("/{meetupId}/invite")
     public ResponseEntity<Void> inviteParticipants(
-            @PathVariable Integer userId,
             @PathVariable Integer meetupId,
             @RequestBody List<Integer> userIds) {
-        meetupService.inviteParticipants(userId, meetupId, userIds);
+        meetupService.inviteParticipants(meetupId, userIds);
         return ResponseEntity.ok().build();
     }
 
-    @PutMapping("/{userId}/{meetupId}/status")
-    public ResponseEntity<Void> updateParticipantStatus(
-            @PathVariable Integer userId,
+    @PutMapping("/{meetupId}/participants/{userId}")
+    public ResponseEntity<MeetupResponse> updateParticipantStatus(
             @PathVariable Integer meetupId,
-            @RequestBody String status) {
-        meetupService.updateParticipantStatus(userId, meetupId, status);
-        return ResponseEntity.ok().build();
+            @PathVariable Integer userId,
+            @RequestParam String status) {
+        return ResponseEntity.ok(meetupService.updateParticipantStatus(meetupId, userId, status));
+    }
+
+    @GetMapping("/invitations/{userId}")
+    public ResponseEntity<List<MeetupResponse>> getInvitedMeetups(@PathVariable Integer userId) {
+        return ResponseEntity.ok(meetupService.getInvitedMeetups(userId));
     }
 } 
