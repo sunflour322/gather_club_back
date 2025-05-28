@@ -1,4 +1,4 @@
-package com.gather_club_back.gather_club_back.yandex_disk;
+package com.gather_club_back.gather_club_back.disk;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

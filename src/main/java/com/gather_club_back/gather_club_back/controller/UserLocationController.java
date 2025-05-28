@@ -39,4 +39,9 @@ public class UserLocationController {
     public ResponseEntity<List<UserLocationResponse>> getPublicLocations(@PathVariable Integer userId) {
         return ResponseEntity.ok(userLocationService.getPublicLocations(userId));
     }
+
+    @GetMapping("/friends")
+    public ResponseEntity<List<UserLocationResponse>> getFriendsLastLocations(@PathVariable Integer userId) {
+        return ResponseEntity.ok(userLocationService.getFriendsLastLocations(userId));
+    }
 } 

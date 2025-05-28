@@ -11,4 +11,5 @@ public interface UserLocationService {
     List<UserLocationResponse> getUserLocations(Integer userId);
     Optional<UserLocationResponse> getLastLocation(Integer userId);
     List<UserLocationResponse> getPublicLocations(Integer userId);
+    List<UserLocationResponse> getFriendsLastLocations(Integer userId);
 } 

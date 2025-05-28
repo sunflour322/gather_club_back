@@ -10,8 +10,8 @@ import java.util.Optional;
 @Repository
 public interface MeetupParticipantRepository extends JpaRepository<MeetupParticipant, Integer> {
     List<MeetupParticipant> findByMeetupMeetupId(Integer meetupId);
-    List<MeetupParticipant> findByUserUserId(Integer userId);
     Optional<MeetupParticipant> findByMeetupMeetupIdAndUserUserId(Integer meetupId, Integer userId);
     boolean existsByMeetupMeetupIdAndUserUserId(Integer meetupId, Integer userId);
+    List<MeetupParticipant> findByUserUserIdAndStatus(Integer userId, String status);
     void deleteByMeetupMeetupId(Integer meetupId);
 } 

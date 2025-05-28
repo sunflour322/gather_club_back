@@ -6,6 +6,19 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class UserMapper {
+    public UserResponse toModel(User entity) {
+        if (entity == null) {
+            return null;
+        }
+
+        UserResponse response = new UserResponse();
+        response.setUserId(entity.getUserId());
+        response.setUsername(entity.getUsername());
+        response.setAvatarUrl(entity.getAvatarUrl());
+        
+        return response;
+    }
+
     public UserResponse toUserResponse(User user) {
         return new UserResponse()
                 .setUserId(user.getUserId())

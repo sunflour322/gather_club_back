@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,7 +41,7 @@ public class PlaceServiceImpl implements PlaceService {
                 bounds[0], bounds[1], bounds[2], bounds[3]);
 
         return places.stream()
-                .map(placeMapper::toPlaceResponse)
+                .map(placeMapper::toModel)
                 .collect(Collectors.toList());
     }
 
@@ -68,10 +69,13 @@ public class PlaceServiceImpl implements PlaceService {
             log.info("Uploaded new image for place {} to {}", placeId, imageUrl);
 
             // Обновляем место
-            place.setImageUrl(imageUrl);
+            place.setImageUrl(imageUrl)
+                .setIsApproved(true)
+                .setCreatedAt(Instant.now());
+            
             Place savedPlace = placeRepository.save(place);
 
-            return placeMapper.toPlaceResponse(savedPlace);
+            return placeMapper.toModel(savedPlace);
         } catch (IOException e) {
             log.error("Failed to update image for place {}", placeId, e);
             throw new IOException("Failed to update place image", e);
