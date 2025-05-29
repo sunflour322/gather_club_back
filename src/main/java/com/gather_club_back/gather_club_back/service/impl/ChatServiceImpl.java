@@ -1,15 +1,19 @@
 package com.gather_club_back.gather_club_back.service.impl;
 
 import com.gather_club_back.gather_club_back.entity.Chat;
+import com.gather_club_back.gather_club_back.entity.ChatParticipant;
 import com.gather_club_back.gather_club_back.entity.Message;
 import com.gather_club_back.gather_club_back.entity.User;
+import com.gather_club_back.gather_club_back.entity.Meetup;
 import com.gather_club_back.gather_club_back.mapper.MessageMapper;
-import com.gather_club_back.gather_club_back.model.ChatMessageRequest;
-import com.gather_club_back.gather_club_back.model.ChatMessageResponse;
+import com.gather_club_back.gather_club_back.model.*;
+import com.gather_club_back.gather_club_back.repository.ChatParticipantRepository;
 import com.gather_club_back.gather_club_back.repository.ChatRepository;
 import com.gather_club_back.gather_club_back.repository.MessageRepository;
 import com.gather_club_back.gather_club_back.repository.UserRepository;
 import com.gather_club_back.gather_club_back.service.ChatService;
+import com.gather_club_back.gather_club_back.service.UserService;
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,14 +31,135 @@ import java.util.stream.Collectors;
 public class ChatServiceImpl implements ChatService {
 
     private final ChatRepository chatRepository;
-    private final MessageRepository messageRepository;
     private final UserRepository userRepository;
+    private final MessageRepository messageRepository;
+    private final ChatParticipantRepository participantRepository;
     private final MessageMapper messageMapper;
+    private final UserService userService;
+    private final EntityManager entityManager;
+
+    @Override
+    @Transactional
+    public ChatResponse createChat(ChatRequest request) {
+        User currentUser = userRepository.findById(userService.getUserId())
+                .orElseThrow(() -> new EntityNotFoundException("Current user not found"));
+        
+        final Chat newChat = new Chat()
+                .setName(request.getName())
+                .setCreatedBy(currentUser)
+                .setCreatedAt(LocalDateTime.now())
+                .setIsGroup(request.getIsGroup())
+                .setThemeId(request.getThemeId());
+        
+        if (request.getMeetupId() != null) {
+            newChat.setMeetup(entityManager.getReference(Meetup.class, request.getMeetupId()));
+        }
+        
+        final Chat savedChat = chatRepository.save(newChat);
+        
+        // Добавляем создателя как участника
+        addParticipantToChat(savedChat, currentUser, "ADMIN");
+        
+        // Добавляем остальных участников
+        if (request.getParticipantIds() != null) {
+            request.getParticipantIds().stream()
+                    .filter(id -> !id.equals(currentUser.getUserId()))
+                    .forEach(userId -> {
+                        User user = userRepository.findById(userId)
+                                .orElseThrow(() -> new EntityNotFoundException("User not found: " + userId));
+                        addParticipantToChat(savedChat, user, "MEMBER");
+                    });
+        }
+        
+        return mapChatToResponse(savedChat);
+    }
+
+    @Override
+    public List<ChatResponse> getUserChats() {
+        User currentUser = getCurrentUser();
+        return participantRepository.findByUserAndLeftAtIsNull(currentUser)
+                .stream()
+                .map(ChatParticipant::getChat)
+                .map(this::mapChatToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public ChatResponse getChatById(Integer chatId) {
+        Chat chat = getChatOrThrow(chatId);
+        validateUserInChat(chat, getCurrentUser());
+        return mapChatToResponse(chat);
+    }
+
+    @Override
+    public List<ChatMessageResponse> getChatMessages(Integer chatId, int page, int size) {
+        Chat chat = getChatOrThrow(chatId);
+        validateUserInChat(chat, getCurrentUser());
+        
+        return messageRepository.findByChatOrderBySentAtDesc(chat, PageRequest.of(page, size))
+                .stream()
+                .map(messageMapper::toModel)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ChatParticipantResponse> getChatParticipants(Integer chatId) {
+        Chat chat = getChatOrThrow(chatId);
+        validateUserInChat(chat, getCurrentUser());
+        
+        return participantRepository.findByChatAndLeftAtIsNull(chat)
+                .stream()
+                .map(this::mapParticipantToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public ChatParticipantResponse addParticipant(Integer chatId, Integer userId) {
+        Chat chat = getChatOrThrow(chatId);
+        User currentUser = getCurrentUser();
+        validateUserIsAdmin(chat, currentUser);
+        
+        User userToAdd = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found: " + userId));
+        
+        ChatParticipant participant = addParticipantToChat(chat, userToAdd, "MEMBER");
+        return mapParticipantToResponse(participant);
+    }
+
+    @Override
+    @Transactional
+    public void removeParticipant(Integer chatId, Integer userId) {
+        Chat chat = getChatOrThrow(chatId);
+        User currentUser = getCurrentUser();
+        validateUserIsAdmin(chat, currentUser);
+        
+        ChatParticipant participant = participantRepository.findByChatAndUserAndLeftAtIsNull(chat, 
+                userRepository.getReferenceById(userId))
+                .orElseThrow(() -> new EntityNotFoundException("Participant not found"));
+        
+        participant.setLeftAt(LocalDateTime.now());
+        participantRepository.save(participant);
+    }
+
+    @Override
+    @Transactional
+    public void deleteChat(Integer chatId) {
+        Chat chat = getChatOrThrow(chatId);
+        User currentUser = getCurrentUser();
+        validateUserIsAdmin(chat, currentUser);
+        
+        participantRepository.findByChatAndLeftAtIsNull(chat)
+                .forEach(participant -> {
+                    participant.setLeftAt(LocalDateTime.now());
+                    participantRepository.save(participant);
+                });
+    }
 
     @Override
     @Transactional
     public ChatMessageResponse saveAndProcessMessage(ChatMessageRequest request) {
-        Chat chat = chatRepository.findById(request.getChatId())
+        final Chat chat = chatRepository.findById(request.getChatId())
                 .orElseThrow(() -> new EntityNotFoundException("Чат не найден"));
 
         User sender = userRepository.findById(request.getSenderId())
@@ -86,5 +211,73 @@ public class ChatServiceImpl implements ChatService {
                 .stream()
                 .map(messageMapper::toModel)
                 .collect(Collectors.toList());
+    }
+
+    private Chat getChatOrThrow(Integer chatId) {
+        return chatRepository.findById(chatId)
+                .orElseThrow(() -> new EntityNotFoundException("Chat not found: " + chatId));
+    }
+
+    private User getCurrentUser() {
+        return userRepository.findById(userService.getUserId())
+                .orElseThrow(() -> new EntityNotFoundException("Current user not found"));
+    }
+
+    private void validateUserInChat(Chat chat, User user) {
+        if (!participantRepository.existsByChatAndUserAndLeftAtIsNull(chat, user)) {
+            throw new IllegalStateException("User is not a participant of this chat");
+        }
+    }
+
+    private void validateUserIsAdmin(Chat chat, User user) {
+        if (!participantRepository.existsByChatAndUserAndRoleAndLeftAtIsNull(chat, user, "ADMIN")) {
+            throw new IllegalStateException("User is not an admin of this chat");
+        }
+    }
+
+    private ChatParticipant addParticipantToChat(Chat chat, User user, String role) {
+        ChatParticipant participant = new ChatParticipant()
+                .setChat(chat)
+                .setUser(user)
+                .setRole(role)
+                .setJoinedAt(LocalDateTime.now());
+        return participantRepository.save(participant);
+    }
+
+    private ChatResponse mapChatToResponse(Chat chat) {
+        ChatResponse response = new ChatResponse();
+        response.setChatId(chat.getChatId());
+        response.setName(chat.getName());
+        response.setCreatedById(chat.getCreatedBy().getUserId());
+        response.setCreatedByName(chat.getCreatedBy().getUsername());
+        response.setCreatedByAvatar(chat.getCreatedBy().getAvatarUrl());
+        response.setCreatedAt(chat.getCreatedAt());
+        response.setIsGroup(chat.getIsGroup());
+        response.setThemeId(chat.getThemeId());
+        response.setMeetupId(chat.getMeetup() != null ? chat.getMeetup().getMeetupId() : null);
+        response.setLastMessageAt(chat.getLastMessageAt());
+        
+        // Получаем последнее сообщение
+        messageRepository.findFirstByChatOrderBySentAtDesc(chat)
+                .ifPresent(message -> response.setLastMessageContent(message.getContent()));
+        
+        // Получаем количество непрочитанных сообщений
+        response.setUnreadCount(messageRepository.countByChatAndReadAtIsNullAndSenderIsNot(
+                chat, getCurrentUser()));
+        
+        return response;
+    }
+
+    private ChatParticipantResponse mapParticipantToResponse(ChatParticipant participant) {
+        ChatParticipantResponse response = new ChatParticipantResponse();
+        response.setParticipantId(participant.getParticipantId());
+        response.setChatId(participant.getChat().getChatId());
+        response.setUserId(participant.getUser().getUserId());
+        response.setUserName(participant.getUser().getUsername());
+        response.setUserAvatar(participant.getUser().getAvatarUrl());
+        response.setJoinedAt(participant.getJoinedAt());
+        response.setLeftAt(participant.getLeftAt());
+        response.setRole(participant.getRole());
+        return response;
     }
 } 

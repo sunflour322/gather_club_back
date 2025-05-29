@@ -14,4 +14,8 @@ public interface MeetupParticipantRepository extends JpaRepository<MeetupPartici
     boolean existsByMeetupMeetupIdAndUserUserId(Integer meetupId, Integer userId);
     List<MeetupParticipant> findByUserUserIdAndStatus(Integer userId, String status);
     void deleteByMeetupMeetupId(Integer meetupId);
+    
+    // Новые методы для фильтрации
+    List<MeetupParticipant> findByUserUserIdAndStatusIn(Integer userId, List<String> statuses);
+    List<MeetupParticipant> findByUserUserIdAndStatusAndMeetupStatusIn(Integer userId, String participantStatus, List<String> meetupStatuses);
 } 

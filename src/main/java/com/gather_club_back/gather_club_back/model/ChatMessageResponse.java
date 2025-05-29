@@ -8,11 +8,11 @@ public class ChatMessageResponse {
     private Integer messageId;
     private Integer chatId;
     private Integer senderId;
-    private String senderUsername;
     private String content;
     private LocalDateTime sentAt;
     private LocalDateTime readAt;
     private Boolean isSystem;
     private Integer replyToId;
-    private String replyToContent;
+    private String senderName;
+    private String senderAvatar;
 } 

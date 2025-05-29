@@ -51,4 +51,24 @@ public class MeetupController {
     public ResponseEntity<List<MeetupResponse>> getInvitedMeetups(@PathVariable Integer userId) {
         return ResponseEntity.ok(meetupService.getInvitedMeetups(userId));
     }
+
+    @GetMapping("/active/{userId}")
+    public ResponseEntity<List<MeetupResponse>> getActiveMeetups(@PathVariable Integer userId) {
+        return ResponseEntity.ok(meetupService.getActiveMeetups(userId));
+    }
+
+    @GetMapping("/completed/{userId}")
+    public ResponseEntity<List<MeetupResponse>> getCompletedMeetups(@PathVariable Integer userId) {
+        return ResponseEntity.ok(meetupService.getCompletedMeetups(userId));
+    }
+
+    @GetMapping("/pending/{userId}")
+    public ResponseEntity<List<MeetupResponse>> getPendingMeetups(@PathVariable Integer userId) {
+        return ResponseEntity.ok(meetupService.getPendingMeetups(userId));
+    }
+
+    @GetMapping("/owned-and-accepted/{userId}")
+    public ResponseEntity<List<MeetupResponse>> getOwnedAndAcceptedMeetups(@PathVariable Integer userId) {
+        return ResponseEntity.ok(meetupService.getOwnedAndAcceptedMeetups(userId));
+    }
 } 

@@ -12,4 +12,10 @@ public interface MeetupService {
     MeetupResponse updateParticipantStatus(Integer meetupId, Integer userId, String status);
     void inviteParticipants(Integer meetupId, List<Integer> userIds);
     List<MeetupResponse> getInvitedMeetups(Integer userId);
+    
+    // Новые методы
+    List<MeetupResponse> getActiveMeetups(Integer userId);
+    List<MeetupResponse> getCompletedMeetups(Integer userId);
+    List<MeetupResponse> getPendingMeetups(Integer userId);
+    List<MeetupResponse> getOwnedAndAcceptedMeetups(Integer userId);
 } 
