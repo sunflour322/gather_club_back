@@ -138,10 +138,11 @@ public class MeetupServiceImpl implements MeetupService {
             Chat chat = chatRepository.findByMeetupMeetupId(meetupId)
                     .orElseThrow(() -> new EntityNotFoundException("Чат встречи не найден"));
 
-            if (!chatParticipantRepository.existsByChatChatIdAndUserUserId(chat.getChatId(), userId)) {
+            User user = participant.getUser();
+            if (!chatParticipantRepository.existsByChatAndUserAndLeftAtIsNull(chat, user)) {
                 ChatParticipant chatParticipant = new ChatParticipant()
                         .setChat(chat)
-                        .setUser(participant.getUser())
+                        .setUser(user)
                         .setJoinedAt(LocalDateTime.now())
                         .setRole("member");
 
@@ -155,7 +156,7 @@ public class MeetupServiceImpl implements MeetupService {
     @Override
     @Transactional
     public void inviteParticipants(Integer meetupId, List<Integer> userIds) {
-        Meetup meetup = meetupRepository.findById(meetupId)
+        final Meetup meetup = meetupRepository.findById(meetupId)
                 .orElseThrow(() -> new EntityNotFoundException("Встреча не найдена"));
 
         LocalDateTime now = LocalDateTime.now();
@@ -179,16 +180,121 @@ public class MeetupServiceImpl implements MeetupService {
     @Override
     @Transactional(readOnly = true)
     public List<MeetupResponse> getInvitedMeetups(Integer userId) {
-        return participantRepository.findByUserUserIdAndStatus(userId, "invited")
-                .stream()
+        List<MeetupParticipant> participants = participantRepository.findByUserUserIdAndStatus(userId, "invited");
+        
+        return participants.stream()
                 .map(participant -> {
-                    List<MeetupParticipantResponse> participants = participantRepository
-                            .findByMeetupMeetupId(participant.getMeetup().getMeetupId())
+                    Meetup meetup = participant.getMeetup();
+                    List<MeetupParticipantResponse> meetupParticipants = participantRepository
+                            .findByMeetupMeetupId(meetup.getMeetupId())
                             .stream()
                             .map(participantMapper::toModel)
                             .collect(Collectors.toList());
-                    return meetupMapper.toModel(participant.getMeetup(), participants);
+                    return meetupMapper.toModel(meetup, meetupParticipants);
                 })
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MeetupResponse> getActiveMeetups(Integer userId) {
+        List<MeetupParticipant> participants = participantRepository
+                .findByUserUserIdAndStatusAndMeetupStatusIn(
+                    userId,
+                    "accepted",
+                    List.of("planned", "ongoing")
+                );
+
+        return participants.stream()
+                .map(participant -> {
+                    Meetup meetup = participant.getMeetup();
+                    List<MeetupParticipantResponse> meetupParticipants = participantRepository
+                            .findByMeetupMeetupId(meetup.getMeetupId())
+                            .stream()
+                            .map(participantMapper::toModel)
+                            .collect(Collectors.toList());
+                    return meetupMapper.toModel(meetup, meetupParticipants);
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MeetupResponse> getCompletedMeetups(Integer userId) {
+        List<MeetupParticipant> participants = participantRepository
+                .findByUserUserIdAndStatusAndMeetupStatusIn(
+                    userId,
+                    "accepted",
+                    List.of("completed", "cancelled")
+                );
+
+        return participants.stream()
+                .map(participant -> {
+                    Meetup meetup = participant.getMeetup();
+                    List<MeetupParticipantResponse> meetupParticipants = participantRepository
+                            .findByMeetupMeetupId(meetup.getMeetupId())
+                            .stream()
+                            .map(participantMapper::toModel)
+                            .collect(Collectors.toList());
+                    return meetupMapper.toModel(meetup, meetupParticipants);
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MeetupResponse> getPendingMeetups(Integer userId) {
+        List<MeetupParticipant> participants = participantRepository
+                .findByUserUserIdAndStatus(userId, "invited");
+
+        return participants.stream()
+                .map(participant -> {
+                    Meetup meetup = participant.getMeetup();
+                    List<MeetupParticipantResponse> meetupParticipants = participantRepository
+                            .findByMeetupMeetupId(meetup.getMeetupId())
+                            .stream()
+                            .map(participantMapper::toModel)
+                            .collect(Collectors.toList());
+                    return meetupMapper.toModel(meetup, meetupParticipants);
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MeetupResponse> getOwnedAndAcceptedMeetups(Integer userId) {
+        // Получаем встречи, где пользователь является создателем и статус planned
+        List<Meetup> ownedMeetups = meetupRepository.findByCreatorUserIdAndStatus(userId, "planned");
+        
+        // Получаем встречи, где пользователь принял приглашение
+        List<MeetupParticipant> acceptedParticipations = participantRepository
+                .findByUserUserIdAndStatus(userId, "accepted");
+        
+        // Объединяем результаты
+        List<MeetupResponse> result = ownedMeetups.stream()
+                .map(meetup -> {
+                    List<MeetupParticipantResponse> participants = participantRepository
+                            .findByMeetupMeetupId(meetup.getMeetupId())
+                            .stream()
+                            .map(participantMapper::toModel)
+                            .collect(Collectors.toList());
+                    return meetupMapper.toModel(meetup, participants);
+                })
+                .collect(Collectors.toList());
+        
+        // Добавляем встречи, где пользователь является принятым участником
+        result.addAll(acceptedParticipations.stream()
+                .map(participant -> {
+                    Meetup meetup = participant.getMeetup();
+                    List<MeetupParticipantResponse> participants = participantRepository
+                            .findByMeetupMeetupId(meetup.getMeetupId())
+                            .stream()
+                            .map(participantMapper::toModel)
+                            .collect(Collectors.toList());
+                    return meetupMapper.toModel(meetup, participants);
+                })
+                .collect(Collectors.toList()));
+        
+        return result;
     }
 } 

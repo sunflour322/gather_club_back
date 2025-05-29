@@ -48,6 +48,10 @@ public class SecurityConfig {
                         ).permitAll()
 
                         // Защищённые эндпоинты
+                        .requestMatchers("/ws/**").authenticated()
+                        .requestMatchers("/app/**").authenticated()
+                        .requestMatchers("/topic/**").authenticated()
+                        .requestMatchers("/queue/**").authenticated()
                         .requestMatchers("/places/**").authenticated()
                         .requestMatchers("/friendships/**").authenticated()
                         .requestMatchers("/users/**").authenticated()
@@ -55,7 +59,9 @@ public class SecurityConfig {
                         .requestMatchers("/place-images/**").authenticated()
                         .requestMatchers("/users/{userId}/location/**").authenticated()
                         .requestMatchers("/chats**").authenticated()
+                        .requestMatchers("/chats/**").authenticated()
                         .requestMatchers("/meetups**").authenticated()
+                        .requestMatchers("/meetups/**").authenticated()
 
                         // Разрешаем все остальные запросы (можно изменить на denyAll() если нужно)
                         .anyRequest().denyAll()

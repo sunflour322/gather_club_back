@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface MeetupRepository extends JpaRepository<Meetup, Integer> {
     List<Meetup> findByCreatorUserId(Integer userId);
+    List<Meetup> findByCreatorUserIdAndStatus(Integer userId, String status);
 } 

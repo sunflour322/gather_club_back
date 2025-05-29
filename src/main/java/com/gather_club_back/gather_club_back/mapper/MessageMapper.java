@@ -15,7 +15,8 @@ public class MessageMapper {
         response.setMessageId(entity.getMessageId());
         response.setChatId(entity.getChat().getChatId());
         response.setSenderId(entity.getSender().getUserId());
-        response.setSenderUsername(entity.getSender().getUsername());
+        response.setSenderName(entity.getSender().getUsername());
+        response.setSenderAvatar(entity.getSender().getAvatarUrl());
         response.setContent(entity.getContent());
         response.setSentAt(entity.getSentAt());
         response.setReadAt(entity.getReadAt());
@@ -23,7 +24,6 @@ public class MessageMapper {
         
         if (entity.getReplyTo() != null) {
             response.setReplyToId(entity.getReplyTo().getMessageId());
-            response.setReplyToContent(entity.getReplyTo().getContent());
         }
 
         return response;
