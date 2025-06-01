@@ -64,7 +64,7 @@ public class PlaceServiceImpl implements PlaceService {
 
             // Загружаем новое изображение
             String filename = generateFilename(imageFile.getOriginalFilename(), placeId);
-            String path = "places/" + placeId + "/" + filename;
+            String path = StorageService.ROOT_PATH + "/places/" + placeId + "/" + filename;
             String imageUrl = storageService.uploadImage(imageFile, path);
             log.info("Uploaded new image for place {} to {}", placeId, imageUrl);
 

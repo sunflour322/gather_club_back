@@ -17,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 public class FirebaseStorageServiceImpl implements StorageService {
 
     private final String bucketName = "flutter-films-mukachev.appspot.com";
+    private final String ROOT_PATH = "GatherClub";
     private final Storage storage = StorageOptions.getDefaultInstance().getService();
 
     @Override

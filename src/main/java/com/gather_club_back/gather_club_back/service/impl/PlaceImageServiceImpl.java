@@ -132,7 +132,7 @@ public class PlaceImageServiceImpl implements PlaceImageService {
                 null;
 
         String filename = generateImageFilename(imageFile.getOriginalFilename(), placeId);
-        String path = "places/" + placeId + "/images/" + filename;
+        String path = StorageService.ROOT_PATH + "/places/" + placeId + "/images/" + filename;
         String imageUrl = storageService.uploadImage(imageFile, path);
 
         PlaceImage placeImage = new PlaceImage()

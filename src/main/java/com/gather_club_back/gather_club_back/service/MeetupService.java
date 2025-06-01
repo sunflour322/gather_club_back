@@ -18,4 +18,7 @@ public interface MeetupService {
     List<MeetupResponse> getCompletedMeetups(Integer userId);
     List<MeetupResponse> getPendingMeetups(Integer userId);
     List<MeetupResponse> getOwnedAndAcceptedMeetups(Integer userId);
+    List<MeetupResponse> getArchivedMeetups(Integer userId);
+    MeetupResponse acceptInvitation(Integer meetupId, Integer userId);
+    MeetupResponse declineInvitation(Integer meetupId, Integer userId);
 } 

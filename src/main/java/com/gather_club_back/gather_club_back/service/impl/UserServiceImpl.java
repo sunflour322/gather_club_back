@@ -49,7 +49,7 @@ public class UserServiceImpl implements UserService {
 
             // Генерируем уникальное имя файла
             String filename = generateAvatarFilename(avatarFile.getOriginalFilename(), userId);
-            String path = "users/" + userId + "/avatar/" + filename;
+            String path = StorageService.ROOT_PATH + "/users/" + userId + "/avatar/" + filename;
 
             // Загружаем новый аватар
             String avatarUrl = storageService.uploadImage(avatarFile, path);

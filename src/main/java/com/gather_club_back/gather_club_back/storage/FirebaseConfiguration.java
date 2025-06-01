@@ -1,4 +1,4 @@
-package com.gather_club_back.gather_club_back.disk;
+package com.gather_club_back.gather_club_back.storage;
 
 
 import com.google.auth.oauth2.GoogleCredentials;
