@@ -5,6 +5,7 @@ import com.gather_club_back.gather_club_back.model.ChatResponse;
 import com.gather_club_back.gather_club_back.model.ChatMessageResponse;
 import com.gather_club_back.gather_club_back.model.ChatParticipantResponse;
 import com.gather_club_back.gather_club_back.model.ChatMessageRequest;
+import com.gather_club_back.gather_club_back.model.ChatParticipantRequest;
 
 import java.util.List;
 
@@ -22,4 +23,7 @@ public interface ChatService {
     ChatParticipantResponse addParticipant(Integer chatId, Integer userId);
     void removeParticipant(Integer chatId, Integer userId);
     void deleteChat(Integer chatId);
+    
+    ChatResponse getChatByMeetupId(Integer meetupId);
+    List<ChatParticipantRequest> getChatParticipantsInfo(Integer chatId);
 } 

@@ -17,4 +17,10 @@ public class ChatResponse {
     private LocalDateTime lastMessageAt;
     private String lastMessageContent;
     private Integer unreadCount;
+    
+    // Информация о встрече
+    private String meetupName;
+    private String meetupStatus;
+    private LocalDateTime meetupScheduledTime;
+    private String participantStatus;
 } 

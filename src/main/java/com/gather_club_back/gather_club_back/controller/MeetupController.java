@@ -3,6 +3,7 @@ package com.gather_club_back.gather_club_back.controller;
 import com.gather_club_back.gather_club_back.model.MeetupRequest;
 import com.gather_club_back.gather_club_back.model.MeetupResponse;
 import com.gather_club_back.gather_club_back.service.MeetupService;
+import com.gather_club_back.gather_club_back.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +16,7 @@ import java.util.List;
 public class MeetupController {
 
     private final MeetupService meetupService;
+    private final UserService userService;
 
     @PostMapping
     public ResponseEntity<MeetupResponse> createMeetup(@RequestBody MeetupRequest request) {
@@ -47,14 +49,34 @@ public class MeetupController {
         return ResponseEntity.ok(meetupService.updateParticipantStatus(meetupId, userId, status));
     }
 
-    @GetMapping("/invitations/{userId}")
-    public ResponseEntity<List<MeetupResponse>> getInvitedMeetups(@PathVariable Integer userId) {
+    @GetMapping("/active")
+    public ResponseEntity<List<MeetupResponse>> getActiveMeetups() {
+        Integer userId = userService.getUserId();
+        return ResponseEntity.ok(meetupService.getActiveMeetups(userId));
+    }
+
+    @GetMapping("/archived")
+    public ResponseEntity<List<MeetupResponse>> getArchivedMeetups() {
+        Integer userId = userService.getUserId();
+        return ResponseEntity.ok(meetupService.getArchivedMeetups(userId));
+    }
+
+    @GetMapping("/invited")
+    public ResponseEntity<List<MeetupResponse>> getInvitedMeetups() {
+        Integer userId = userService.getUserId();
         return ResponseEntity.ok(meetupService.getInvitedMeetups(userId));
     }
 
-    @GetMapping("/active/{userId}")
-    public ResponseEntity<List<MeetupResponse>> getActiveMeetups(@PathVariable Integer userId) {
-        return ResponseEntity.ok(meetupService.getActiveMeetups(userId));
+    @PostMapping("/{meetupId}/accept")
+    public ResponseEntity<MeetupResponse> acceptInvitation(@PathVariable Integer meetupId) {
+        Integer userId = userService.getUserId();
+        return ResponseEntity.ok(meetupService.acceptInvitation(meetupId, userId));
+    }
+
+    @PostMapping("/{meetupId}/decline")
+    public ResponseEntity<MeetupResponse> declineInvitation(@PathVariable Integer meetupId) {
+        Integer userId = userService.getUserId();
+        return ResponseEntity.ok(meetupService.declineInvitation(meetupId, userId));
     }
 
     @GetMapping("/completed/{userId}")

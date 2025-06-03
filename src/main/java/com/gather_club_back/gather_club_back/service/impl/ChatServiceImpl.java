@@ -77,10 +77,25 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public List<ChatResponse> getUserChats() {
         User currentUser = getCurrentUser();
-        return participantRepository.findByUserAndLeftAtIsNull(currentUser)
-                .stream()
-                .map(ChatParticipant::getChat)
-                .map(this::mapChatToResponse)
+        List<Object[]> chatsWithMeetupInfo = chatRepository.findUserChatsWithMeetupInfo(currentUser.getUserId());
+        
+        return chatsWithMeetupInfo.stream()
+                .map(row -> {
+                    Chat chat = (Chat) row[0];
+                    Meetup meetup = (Meetup) row[1];
+                    String participantStatus = (String) row[2];
+                    
+                    ChatResponse response = mapChatToResponse(chat);
+                    
+                    if (meetup != null) {
+                        response.setMeetupName(meetup.getName());
+                        response.setMeetupStatus(meetup.getStatus());
+                        response.setMeetupScheduledTime(meetup.getScheduledTime());
+                        response.setParticipantStatus(participantStatus);
+                    }
+                    
+                    return response;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -210,6 +225,38 @@ public class ChatServiceImpl implements ChatService {
         return messageRepository.findByChatChatIdAndReadAtIsNullAndSenderUserIdNot(chatId, userId)
                 .stream()
                 .map(messageMapper::toModel)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ChatResponse getChatByMeetupId(Integer meetupId) {
+        Chat chat = chatRepository.findByMeetupIdWithDetails(meetupId)
+                .orElseThrow(() -> new EntityNotFoundException("Чат для встречи не найден"));
+        
+        // Проверяем, что текущий пользователь имеет доступ к чату
+        User currentUser = getCurrentUser();
+        validateUserInChat(chat, currentUser);
+        
+        return mapChatToResponse(chat);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ChatParticipantRequest> getChatParticipantsInfo(Integer chatId) {
+        // Проверяем, что чат существует и пользователь имеет к нему доступ
+        Chat chat = getChatOrThrow(chatId);
+        validateUserInChat(chat, getCurrentUser());
+        
+        List<Object[]> participantsData = chatRepository.findChatParticipantsInfo(chatId);
+        
+        return participantsData.stream()
+                .map(row -> new ChatParticipantRequest()
+                        .setUserId((Integer) row[0])
+                        .setUsername((String) row[1])
+                        .setAvatarUrl((String) row[2])
+                        .setRole((String) row[3])
+                        .setJoinedAt((LocalDateTime) row[4]))
                 .collect(Collectors.toList());
     }
 

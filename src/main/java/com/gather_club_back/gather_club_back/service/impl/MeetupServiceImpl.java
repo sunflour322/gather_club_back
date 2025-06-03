@@ -13,6 +13,7 @@ import com.gather_club_back.gather_club_back.model.MeetupResponse;
 import com.gather_club_back.gather_club_back.model.MeetupParticipantResponse;
 import com.gather_club_back.gather_club_back.repository.*;
 import com.gather_club_back.gather_club_back.service.MeetupService;
+import com.gather_club_back.gather_club_back.service.UserService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,7 @@ public class MeetupServiceImpl implements MeetupService {
     private final ChatParticipantRepository chatParticipantRepository;
     private final MeetupMapper meetupMapper;
     private final MeetupParticipantMapper participantMapper;
+    private final UserService userService;
 
     @Override
     @Transactional
@@ -179,41 +181,48 @@ public class MeetupServiceImpl implements MeetupService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<MeetupResponse> getInvitedMeetups(Integer userId) {
-        List<MeetupParticipant> participants = participantRepository.findByUserUserIdAndStatus(userId, "invited");
-        
-        return participants.stream()
-                .map(participant -> {
-                    Meetup meetup = participant.getMeetup();
-                    List<MeetupParticipantResponse> meetupParticipants = participantRepository
+    public List<MeetupResponse> getActiveMeetups(Integer userId) {
+        List<Meetup> meetups = meetupRepository.findActiveMeetups(userId);
+        return meetups.stream()
+                .map(meetup -> {
+                    List<MeetupParticipantResponse> participants = participantRepository
                             .findByMeetupMeetupId(meetup.getMeetupId())
                             .stream()
                             .map(participantMapper::toModel)
                             .collect(Collectors.toList());
-                    return meetupMapper.toModel(meetup, meetupParticipants);
+                    return meetupMapper.toModel(meetup, participants);
                 })
                 .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<MeetupResponse> getActiveMeetups(Integer userId) {
-        List<MeetupParticipant> participants = participantRepository
-                .findByUserUserIdAndStatusAndMeetupStatusIn(
-                    userId,
-                    "accepted",
-                    List.of("planned", "ongoing")
-                );
-
-        return participants.stream()
-                .map(participant -> {
-                    Meetup meetup = participant.getMeetup();
-                    List<MeetupParticipantResponse> meetupParticipants = participantRepository
+    public List<MeetupResponse> getArchivedMeetups(Integer userId) {
+        List<Meetup> meetups = meetupRepository.findArchivedMeetups(userId);
+        return meetups.stream()
+                .map(meetup -> {
+                    List<MeetupParticipantResponse> participants = participantRepository
                             .findByMeetupMeetupId(meetup.getMeetupId())
                             .stream()
                             .map(participantMapper::toModel)
                             .collect(Collectors.toList());
-                    return meetupMapper.toModel(meetup, meetupParticipants);
+                    return meetupMapper.toModel(meetup, participants);
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MeetupResponse> getInvitedMeetups(Integer userId) {
+        List<Meetup> meetups = meetupRepository.findInvitedMeetups(userId);
+        return meetups.stream()
+                .map(meetup -> {
+                    List<MeetupParticipantResponse> participants = participantRepository
+                            .findByMeetupMeetupId(meetup.getMeetupId())
+                            .stream()
+                            .map(participantMapper::toModel)
+                            .collect(Collectors.toList());
+                    return meetupMapper.toModel(meetup, participants);
                 })
                 .collect(Collectors.toList());
     }
@@ -296,5 +305,17 @@ public class MeetupServiceImpl implements MeetupService {
                 .collect(Collectors.toList()));
         
         return result;
+    }
+
+    @Override
+    @Transactional
+    public MeetupResponse acceptInvitation(Integer meetupId, Integer userId) {
+        return updateParticipantStatus(meetupId, userId, "accepted");
+    }
+
+    @Override
+    @Transactional
+    public MeetupResponse declineInvitation(Integer meetupId, Integer userId) {
+        return updateParticipantStatus(meetupId, userId, "declined");
     }
 } 
