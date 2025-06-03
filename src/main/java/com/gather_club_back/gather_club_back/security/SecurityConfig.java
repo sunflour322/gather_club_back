@@ -62,6 +62,7 @@ public class SecurityConfig {
                         .requestMatchers("/chats/**").authenticated()
                         .requestMatchers("/meetups**").authenticated()
                         .requestMatchers("/meetups/**").authenticated()
+                        .requestMatchers("/place-categories/**").authenticated()
 
                         // Разрешаем все остальные запросы (можно изменить на denyAll() если нужно)
                         .anyRequest().denyAll()

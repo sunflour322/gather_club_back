@@ -24,6 +24,8 @@ public class PlaceResponse {
 
     @Column(name = "category_id")
     private Integer categoryId;
+    
+    private PlaceCategoryResponse category;
 
     @Column(name = "created_at")
     private Instant createdAt;

@@ -242,7 +242,7 @@ public class MeetupServiceImpl implements MeetupService {
                     Meetup meetup = participant.getMeetup();
                     List<MeetupParticipantResponse> meetupParticipants = participantRepository
                             .findByMeetupMeetupId(meetup.getMeetupId())
-                            .stream()
+                .stream()
                             .map(participantMapper::toModel)
                             .collect(Collectors.toList());
                     return meetupMapper.toModel(meetup, meetupParticipants);

@@ -36,14 +36,14 @@ public class FirebaseStorageServiceImpl implements StorageService {
             
             String encodedPath = encodePath(normalizedPath);
             log.info("Закодированный путь: {}", encodedPath);
-            
+
             BlobId blobId = BlobId.of(bucketName, normalizedPath); // Используем нормализованный путь без кодирования
-            BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
-                    .setContentType(file.getContentType())
-                    .build();
-            
+        BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
+                .setContentType(file.getContentType())
+                .build();
+
             log.info("Создание блоба с типом содержимого: {}", file.getContentType());
-            storage.create(blobInfo, file.getBytes());
+        storage.create(blobInfo, file.getBytes());
             log.info("Файл успешно загружен в Firebase Storage");
             
             String downloadUrl = generateDownloadUrl(encodedPath);
@@ -83,8 +83,8 @@ public class FirebaseStorageServiceImpl implements StorageService {
             
             com.google.cloud.storage.Storage storage = StorageClient.getInstance().bucket().getStorage();
             BlobId blobId = BlobId.of(bucketName, normalizedPath); // Используем нормализованный путь без кодирования
-            boolean deleted = storage.delete(blobId);
-            
+        boolean deleted = storage.delete(blobId);
+
             if (deleted) {
                 log.info("Файл успешно удален: {}", normalizedPath);
             } else {

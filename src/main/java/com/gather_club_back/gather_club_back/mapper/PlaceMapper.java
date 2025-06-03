@@ -1,11 +1,19 @@
 package com.gather_club_back.gather_club_back.mapper;
 
 import com.gather_club_back.gather_club_back.entity.Place;
+import com.gather_club_back.gather_club_back.entity.PlaceCategory;
 import com.gather_club_back.gather_club_back.model.PlaceResponse;
+import com.gather_club_back.gather_club_back.repository.PlaceCategoryRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class PlaceMapper {
+    
+    private final PlaceCategoryRepository placeCategoryRepository;
+    private final PlaceCategoryMapper placeCategoryMapper;
+    
     public PlaceResponse toModel(Place entity) {
         if (entity == null) {
             return null;
@@ -23,6 +31,12 @@ public class PlaceMapper {
         response.setIsApproved(entity.getIsApproved());
         response.setPopularity(entity.getPopularity());
         response.setImageUrl(entity.getImageUrl());
+        
+        // Добавляем информацию о категории
+        if (entity.getCategoryId() != null) {
+            placeCategoryRepository.findById(entity.getCategoryId())
+                    .ifPresent(category -> response.setCategory(placeCategoryMapper.toModel(category)));
+        }
         
         return response;
     }

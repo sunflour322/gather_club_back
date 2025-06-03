@@ -16,5 +16,6 @@ public class UserCustomPlaceResponse {
     private Double longitude;
     private LocalDateTime createdAt;
     private Integer categoryId;
+    private PlaceCategoryResponse category;
     private String imageUrl;
 } 
