@@ -50,4 +50,7 @@ public class UserResponse {
     private Instant resetTokenExpires;
 
     private Role role;
+
+    @Column(name = "is_online")
+    private Boolean isOnline;
 }

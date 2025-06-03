@@ -17,4 +17,6 @@ public interface UserService {
     String getAvatarUrl(Integer userId);
     Integer getUserId();
     List<UserResponse> getAllUsers();
+    UserResponse setUserOnline(Integer userId);
+    UserResponse setUserOffline(Integer userId);
 }

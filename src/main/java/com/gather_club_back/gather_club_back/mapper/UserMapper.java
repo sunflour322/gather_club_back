@@ -15,6 +15,7 @@ public class UserMapper {
         response.setUserId(entity.getUserId());
         response.setUsername(entity.getUsername());
         response.setAvatarUrl(entity.getAvatarUrl());
+        response.setIsOnline(entity.getIsOnline());
         
         return response;
     }
@@ -34,6 +35,7 @@ public class UserMapper {
                 .setVerificationToken(user.getVerificationToken())
                 .setResetToken(user.getResetToken())
                 .setResetTokenExpires(user.getResetTokenExpires())
+                .setIsOnline(user.getIsOnline())
                 .setRole(user.getRole());
     }
 

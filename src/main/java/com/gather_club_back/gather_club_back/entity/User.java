@@ -62,8 +62,13 @@ public class User implements UserDetails {
     @Column(name = "reset_token_expires")
     private Instant resetTokenExpires;
 
+    
+
     @Enumerated(EnumType.STRING)
     private Role role;
+    
+    @Column(name = "is_online")
+    private Boolean isOnline = false;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
