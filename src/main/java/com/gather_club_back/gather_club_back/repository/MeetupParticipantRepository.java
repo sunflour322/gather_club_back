@@ -18,4 +18,7 @@ public interface MeetupParticipantRepository extends JpaRepository<MeetupPartici
     // Новые методы для фильтрации
     List<MeetupParticipant> findByUserUserIdAndStatusIn(Integer userId, List<String> statuses);
     List<MeetupParticipant> findByUserUserIdAndStatusAndMeetupStatusIn(Integer userId, String participantStatus, List<String> meetupStatuses);
+    
+    // Метод для поиска участников встречи по статусу
+    List<MeetupParticipant> findByMeetupMeetupIdAndStatus(Integer meetupId, String status);
 } 
