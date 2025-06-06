@@ -89,11 +89,11 @@ public class UserController {
     public ResponseEntity<?> updateCurrentUserAvatar(
             @RequestParam("avatar") MultipartFile avatarFile) {
         try {
-            Integer userId = userService.getUserId();
-            if (userId == null) {
+        Integer userId = userService.getUserId();
+        if (userId == null) {
                 log.error("Невозможно обновить аватар: пользователь не найден");
                 return ResponseEntity.status(401).body("Пользователь не авторизован");
-            }
+        }
             
             log.info("Получен запрос на обновление аватара для текущего пользователя (ID: {}), имя файла: {}, тип содержимого: {}, размер: {} байт",
                     userId, avatarFile.getOriginalFilename(), avatarFile.getContentType(), avatarFile.getSize());

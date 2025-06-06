@@ -54,7 +54,7 @@ public class UserServiceImpl implements UserService {
             // Удаляем старый аватар, если он есть
             if (user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty()) {
                 try {
-                    storageService.deleteImage(user.getAvatarUrl());
+                storageService.deleteImage(user.getAvatarUrl());
                     log.info("Удален старый аватар пользователя {}", userId);
                 } catch (Exception e) {
                     log.warn("Не удалось удалить старый аватар пользователя {}: {}", userId, e.getMessage());

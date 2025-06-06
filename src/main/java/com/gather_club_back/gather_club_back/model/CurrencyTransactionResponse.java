@@ -7,15 +7,13 @@ import java.time.LocalDateTime;
 
 @Data
 @Accessors(chain = true)
-public class UserCustomPlaceResponse {
-    private Integer placeId;
+public class CurrencyTransactionResponse {
+    private Integer transactionId;
     private Integer userId;
-    private String name;
+    private String username;
+    private Integer amount;
+    private String transactionType;
     private String description;
-    private Double latitude;
-    private Double longitude;
+    private Integer referenceId;
     private LocalDateTime createdAt;
-    private Integer categoryId;
-    private PlaceCategoryResponse category;
-    private String imageUrl;
 } 
