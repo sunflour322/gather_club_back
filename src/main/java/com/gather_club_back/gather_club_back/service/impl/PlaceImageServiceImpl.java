@@ -121,6 +121,14 @@ public class PlaceImageServiceImpl implements PlaceImageService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public String getMainPlaceImageUrl(Integer placeId) {
+        return placeImageRepository.findFirstByPlacePlaceIdAndIsApprovedTrueOrderByUploadedAtDesc(placeId)
+                .map(PlaceImage::getImageUrl)
+                .orElse(null);
+    }
+
+    @Override
     @Transactional
     public PlaceImageResponse uploadPlaceImage(Integer placeId, MultipartFile imageFile, Integer userId) throws IOException {
         Place place = placeRepository.findById(placeId)
@@ -131,6 +139,10 @@ public class PlaceImageServiceImpl implements PlaceImageService {
                         .orElseThrow(() -> new RuntimeException("User not found with id: " + userId)) :
                 null;
 
+        // Удаляем старые изображения места из хранилища
+        
+
+        // Загружаем новое изображение
         String filename = generateImageFilename(imageFile.getOriginalFilename(), placeId);
         String path = StorageService.ROOT_PATH + "/places/" + placeId + "/images/" + filename;
         String imageUrl = storageService.uploadImage(imageFile, path);
@@ -139,6 +151,7 @@ public class PlaceImageServiceImpl implements PlaceImageService {
                 .setPlace(place)
                 .setImageUrl(imageUrl)
                 .setUploadedBy(user)
+                .setUploadedAt(LocalDateTime.now())
                 .setIsApproved(true)
                 .setLikes(0)
                 .setDislikes(0);

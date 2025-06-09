@@ -34,13 +34,13 @@ public class MeetupLocationCheckServiceImpl implements MeetupLocationCheckServic
     private final UserLocationService userLocationService;
     private final UserCurrencyService userCurrencyService;
     
-    @Value("${app.meetup.reward.amount:50}")
+    @Value("${app.meetup.reward.amount:1}")
     private Integer meetupRewardAmount;
     
     @Value("${app.meetup.location.radius:100}")
     private Double meetupLocationRadius;
     
-    @Value("${app.meetup.participants.radius:10}")
+    @Value("${app.meetup.participants.radius:100}")
     private Double participantsRadius;
 
     @Override
@@ -56,7 +56,7 @@ public class MeetupLocationCheckServiceImpl implements MeetupLocationCheckServic
             return result
                     .setSuccess(false)
                     .setAlreadyRewarded(true)
-                    .setMessage("Валюта за эту встречу уже была начислена");
+                    .setMessage("Звезда уже была получена");
         }
         
         // Проверяем, находится ли пользователь рядом с местом встречи
@@ -79,72 +79,146 @@ public class MeetupLocationCheckServiceImpl implements MeetupLocationCheckServic
                     .setMessage("Не все участники находятся рядом друг с другом");
         }
         
-        // Если все условия выполнены, начисляем валюту
+        // Если все условия выполнены, начисляем валюту всем участникам
         Meetup meetup = meetupRepository.findById(meetupId)
                 .orElseThrow(() -> new EntityNotFoundException("Встреча не найдена"));
         
+        // Получаем всех участников встречи (включая организатора)
+        List<Integer> participantIds = new java.util.ArrayList<>();
+        participantIds.add(meetup.getCreator().getUserId()); // Добавляем организатора
+        
+        // Добавляем участников со статусом accepted
+        List<MeetupParticipant> acceptedParticipants = participantRepository.findByMeetupMeetupIdAndStatus(meetupId, "accepted");
+        acceptedParticipants.forEach(p -> participantIds.add(p.getUser().getUserId()));
+        
+        log.info("Найденные участники встречи {} для начисления звезд: {}", meetupId, participantIds);
+        
         String description = "Посещение встречи: " + meetup.getName();
-        Integer newBalance = userCurrencyService.addCurrency(
-                userId, 
-                meetupRewardAmount, 
-                description, 
-                "meetup_attendance", 
-                meetupId
-        );
+        java.util.Map<Integer, Integer> newBalances = new java.util.HashMap<>();
+        
+        // Начисляем звезды всем участникам
+        for (Integer participantId : participantIds) {
+            boolean hasTransaction = userCurrencyService.hasTransactionForReference(participantId, "meetup_attendance", meetupId);
+            log.info("Проверка транзакции meetup_attendance для участника {} на встречу {}: {}", 
+                participantId, meetupId, hasTransaction);
+            
+            if (!hasTransaction) {
+                log.info("Начинаем начисление звезд участнику {} за встречу {}", participantId, meetupId);
+                try {
+                    Integer balance = userCurrencyService.addCurrency(
+                            participantId,
+                            meetupRewardAmount,
+                            description,
+                            "meetup_attendance",
+                            meetupId
+                    );
+                    newBalances.put(participantId, balance);
+                    log.info("УСПЕШНО: Начислено {} звезд участнику {} за встречу {}", 
+                            meetupRewardAmount, participantId, meetupId);
+                } catch (Exception e) {
+                    log.error("ОШИБКА при начислении звезд участнику {}: {}", participantId, e.getMessage());
+                }
+            } else {
+                log.info("Пропуск участника {} - звезды уже начислены", participantId);
+            }
+        }
+        
+        // Обновляем статус встречи на completed
+        meetup.setStatus("completed");
+        meetupRepository.save(meetup);
+        log.info("Статус встречи {} изменен на completed", meetupId);
+        
+        // Возвращаем баланс текущего пользователя (если он получил награду)
+        Integer currentUserBalance = newBalances.getOrDefault(userId, 0);
         
         return result
                 .setSuccess(true)
                 .setRewardAmount(meetupRewardAmount)
-                .setNewBalance(newBalance)
-                .setMessage("Валюта успешно начислена");
+                .setNewBalance(currentUserBalance)
+                .setMessage("Звезды успешно начислены всем участникам");
     }
 
     @Override
-    public boolean isUserNearMeetupLocation(Integer meetupId, Integer userId, UserLocationRequest location, double radiusInMeters) {
-        Meetup meetup = meetupRepository.findById(meetupId)
-                .orElseThrow(() -> new EntityNotFoundException("Встреча не найдена"));
-        
-        Place place = meetup.getPlace();
-        
-        if (place == null || place.getLatitude() == null || place.getLongitude() == null) {
-            log.warn("У встречи {} отсутствуют координаты места", meetupId);
-            return false;
-        }
-        
-        // Вычисляем расстояние между пользователем и местом встречи
-        double distance = calculateDistance(
-                location.getLatitude(), 
-                location.getLongitude(), 
-                place.getLatitude(), 
-                place.getLongitude()
-        );
-        
-        log.info("Расстояние между пользователем {} и местом встречи {}: {} метров (максимум: {})",
-                userId, meetupId, distance, radiusInMeters);
-        
-        return distance <= radiusInMeters;
+public boolean isUserNearMeetupLocation(Integer meetupId, Integer userId, UserLocationRequest location, double radiusInMeters) {
+    Meetup meetup = meetupRepository.findById(meetupId)
+            .orElseThrow(() -> new EntityNotFoundException("Встреча не найдена"));
+    
+    Place place = meetup.getPlace();
+    
+    if (place == null || place.getLatitude() == null || place.getLongitude() == null) {
+        log.warn("У встречи {} отсутствуют координаты места", meetupId);
+        return false;
     }
+    
+    // Добавляем логирование координат
+    log.info("Координаты пользователя {}: lat={}, lon={}", 
+            userId, location.getLatitude(), location.getLongitude());
+    log.info("Координаты места встречи {}: lat={}, lon={}", 
+            meetupId, place.getLatitude(), place.getLongitude());
+    
+    // Вычисляем расстояние между пользователем и местом встречи
+    double distance = calculateDistance(
+            location.getLatitude(), 
+            location.getLongitude(), 
+            place.getLatitude(), 
+            place.getLongitude()
+    );
+    
+    log.info("Расстояние между пользователем {} и местом встречи {}: {} метров (максимум: {})",
+            userId, meetupId, distance, radiusInMeters);
+    
+    return distance <= radiusInMeters;
+}
 
     @Override
     public boolean areParticipantsNearEachOther(Integer meetupId, double radiusInMeters) {
+        // Получаем встречу для доступа к организатору
+        Meetup meetup = meetupRepository.findById(meetupId)
+                .orElseThrow(() -> new EntityNotFoundException("Встреча не найдена"));
+        
         // Получаем всех участников встречи со статусом "accepted"
         List<MeetupParticipant> participants = participantRepository.findByMeetupMeetupIdAndStatus(meetupId, "accepted");
         
-        if (participants.size() <= 1) {
-            log.info("У встречи {} меньше двух участников", meetupId);
-            return true; // Если участник один или их нет, считаем условие выполненным
+        log.warn("Проверка расстояния между участниками встречи {}, участников с accepted: {}", 
+                meetupId, participants.size());
+        
+        // Если нет участников со статусом accepted, проверять нечего
+        if (participants.isEmpty()) {
+            log.info("У встречи {} нет участников со статусом accepted", meetupId);
+            return true;
         }
         
-        // Получаем последние местоположения всех участников
-        List<UserLocation> locations = participants.stream()
-                .map(participant -> userLocationRepository.findFirstByUserUserIdOrderByTimestampDesc(participant.getUser().getUserId()))
+        // Создаем список всех пользователей, включая организатора
+        List<Integer> allUserIds = new java.util.ArrayList<>();
+        
+        // Добавляем организатора
+        allUserIds.add(meetup.getCreator().getUserId());
+        
+        // Добавляем участников
+        participants.forEach(p -> allUserIds.add(p.getUser().getUserId()));
+        
+        log.warn("Всего участников встречи {} (включая организатора): {}", meetupId, allUserIds.size());
+        
+        // Получаем последние местоположения всех пользователей
+        List<UserLocation> locations = allUserIds.stream()
+                .map(userId -> userLocationRepository.findFirstByUserUserIdOrderByTimestampDesc(userId))
                 .filter(java.util.Optional::isPresent)
                 .map(java.util.Optional::get)
                 .collect(Collectors.toList());
         
-        if (locations.size() != participants.size()) {
-            log.warn("Не все участники встречи {} имеют данные о местоположении", meetupId);
+        log.warn("Получены данные о местоположении для {} из {} участников встречи {}", 
+                locations.size(), allUserIds.size(), meetupId);
+        
+        if (locations.size() != allUserIds.size()) {
+            log.warn("Не все участники встречи {} имеют данные о местоположении: {}/{}", 
+                    meetupId, locations.size(), allUserIds.size());
             return false;
+        }
+        
+        // Если только один участник, проверять расстояние не нужно
+        if (locations.size() < 2) {
+            log.warn("У встречи {} только один участник с данными о местоположении", meetupId);
+            return true;
         }
         
         // Проверяем, что каждый участник находится в пределах указанного радиуса от каждого другого участника
@@ -161,14 +235,20 @@ public class MeetupLocationCheckServiceImpl implements MeetupLocationCheckServic
                         location2.getLongitude()
                 );
                 
+                // Принудительно выводим в лог информацию о расстоянии между каждой парой участников
+                log.warn("Расстояние между участниками {} и {}: {} метров (максимум: {})",
+                        location1.getUser().getUserId(), location2.getUser().getUserId(), distance, radiusInMeters);
+                
                 if (distance > radiusInMeters) {
-                    log.info("Участники {} и {} находятся на расстоянии {} метров друг от друга (максимум: {})",
-                            location1.getUser().getUserId(), location2.getUser().getUserId(), distance, radiusInMeters);
+                    log.error("Превышено максимальное расстояние между участниками {} и {}: {} > {}", 
+                            location1.getUser().getUserId(), location2.getUser().getUserId(), 
+                            distance, radiusInMeters);
                     return false;
                 }
             }
         }
         
+        log.info("Все участники встречи {} находятся в пределах {} метров друг от друга", meetupId, radiusInMeters);
         return true;
     }
     
@@ -184,15 +264,27 @@ public class MeetupLocationCheckServiceImpl implements MeetupLocationCheckServic
     private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
         final int R = 6371000; // Радиус Земли в метрах
         
-        double latDistance = Math.toRadians(lat2 - lat1);
-        double lonDistance = Math.toRadians(lon2 - lon1);
+        // Преобразуем координаты из градусов в радианы
+        double lat1Rad = Math.toRadians(lat1);
+        double lon1Rad = Math.toRadians(lon1);
+        double lat2Rad = Math.toRadians(lat2);
+        double lon2Rad = Math.toRadians(lon2);
         
+        // Разница координат
+        double latDistance = lat2Rad - lat1Rad;
+        double lonDistance = lon2Rad - lon1Rad;
+        
+        // Формула гаверсинусов
         double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
-                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                + Math.cos(lat1Rad) * Math.cos(lat2Rad)
                 * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
         
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         
-        return R * c;
+        // Расстояние в метрах
+        double distance = R * c;
+        
+        // Округляем до 2 знаков после запятой для логирования
+        return Math.round(distance * 100) / 100.0;
     }
-} 
+}
