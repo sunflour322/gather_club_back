@@ -34,13 +34,13 @@ public class MeetupLocationCheckServiceImpl implements MeetupLocationCheckServic
     private final UserLocationService userLocationService;
     private final UserCurrencyService userCurrencyService;
     
-    @Value("${app.meetup.reward.amount:50}")
+    @Value("${app.meetup.reward.amount:1}")
     private Integer meetupRewardAmount;
     
     @Value("${app.meetup.location.radius:100}")
     private Double meetupLocationRadius;
     
-    @Value("${app.meetup.participants.radius:10}")
+    @Value("${app.meetup.participants.radius:100}")
     private Double participantsRadius;
 
     @Override
@@ -56,7 +56,7 @@ public class MeetupLocationCheckServiceImpl implements MeetupLocationCheckServic
             return result
                     .setSuccess(false)
                     .setAlreadyRewarded(true)
-                    .setMessage("Валюта за эту встречу уже была начислена");
+                    .setMessage("Звезда уже была получена");
         }
         
         // Проверяем, находится ли пользователь рядом с местом встречи
@@ -79,24 +79,63 @@ public class MeetupLocationCheckServiceImpl implements MeetupLocationCheckServic
                     .setMessage("Не все участники находятся рядом друг с другом");
         }
         
-        // Если все условия выполнены, начисляем валюту
+        // Если все условия выполнены, начисляем валюту всем участникам
         Meetup meetup = meetupRepository.findById(meetupId)
                 .orElseThrow(() -> new EntityNotFoundException("Встреча не найдена"));
         
+        // Получаем всех участников встречи (включая организатора)
+        List<Integer> participantIds = new java.util.ArrayList<>();
+        participantIds.add(meetup.getCreator().getUserId()); // Добавляем организатора
+        
+        // Добавляем участников со статусом accepted
+        List<MeetupParticipant> acceptedParticipants = participantRepository.findByMeetupMeetupIdAndStatus(meetupId, "accepted");
+        acceptedParticipants.forEach(p -> participantIds.add(p.getUser().getUserId()));
+        
+        log.info("Найденные участники встречи {} для начисления звезд: {}", meetupId, participantIds);
+        
         String description = "Посещение встречи: " + meetup.getName();
-        Integer newBalance = userCurrencyService.addCurrency(
-                userId, 
-                meetupRewardAmount, 
-                description, 
-                "meetup_attendance", 
-                meetupId
-        );
+        java.util.Map<Integer, Integer> newBalances = new java.util.HashMap<>();
+        
+        // Начисляем звезды всем участникам
+        for (Integer participantId : participantIds) {
+            boolean hasTransaction = userCurrencyService.hasTransactionForReference(participantId, "meetup_attendance", meetupId);
+            log.info("Проверка транзакции meetup_attendance для участника {} на встречу {}: {}", 
+                participantId, meetupId, hasTransaction);
+            
+            if (!hasTransaction) {
+                log.info("Начинаем начисление звезд участнику {} за встречу {}", participantId, meetupId);
+                try {
+                    Integer balance = userCurrencyService.addCurrency(
+                            participantId,
+                            meetupRewardAmount,
+                            description,
+                            "meetup_attendance",
+                            meetupId
+                    );
+                    newBalances.put(participantId, balance);
+                    log.info("УСПЕШНО: Начислено {} звезд участнику {} за встречу {}", 
+                            meetupRewardAmount, participantId, meetupId);
+                } catch (Exception e) {
+                    log.error("ОШИБКА при начислении звезд участнику {}: {}", participantId, e.getMessage());
+                }
+            } else {
+                log.info("Пропуск участника {} - звезды уже начислены", participantId);
+            }
+        }
+        
+        // Обновляем статус встречи на completed
+        meetup.setStatus("completed");
+        meetupRepository.save(meetup);
+        log.info("Статус встречи {} изменен на completed", meetupId);
+        
+        // Возвращаем баланс текущего пользователя (если он получил награду)
+        Integer currentUserBalance = newBalances.getOrDefault(userId, 0);
         
         return result
                 .setSuccess(true)
                 .setRewardAmount(meetupRewardAmount)
-                .setNewBalance(newBalance)
-                .setMessage("Валюта успешно начислена");
+                .setNewBalance(currentUserBalance)
+                .setMessage("Звезды успешно начислены всем участникам");
     }
 
     @Override

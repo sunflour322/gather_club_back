@@ -19,7 +19,7 @@ logging:
 app:
   meetup:
     reward:
-      amount: 50
+      amount: 1
     location:
       radius: 100
     participants:
