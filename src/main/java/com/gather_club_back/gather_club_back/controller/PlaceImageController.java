@@ -6,6 +6,7 @@ import com.gather_club_back.gather_club_back.service.PlaceImageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -64,19 +65,40 @@ public class PlaceImageController {
         return ResponseEntity.ok(placeImageService.getPlaceImages(placeId));
     }
 
-    @PutMapping("/admin/approve/{imageId}")
-    public ResponseEntity<Void> approveImage(
-            @PathVariable Integer imageId) {
-        placeImageService.approveImage(imageId);
-        return ResponseEntity.ok().build();
-    }
+@PutMapping("/admin/approve/{imageId}")
+@PreAuthorize("hasRole('ROLE_ADMIN')")
+public ResponseEntity<Void> approveImage(
+        @PathVariable Integer imageId) {
+    placeImageService.approveImage(imageId);
+    return ResponseEntity.ok().build();
+}
 
-    @DeleteMapping("/admin/reject/{imageId}")
-    public ResponseEntity<Void> rejectImage(
-            @PathVariable Integer imageId) {
+@DeleteMapping("/admin/reject/{imageId}")
+@PreAuthorize("hasRole('ROLE_ADMIN')")
+public ResponseEntity<Void> rejectImage(
+        @PathVariable Integer imageId) {
+    placeImageService.rejectImage(imageId);
+    return ResponseEntity.ok().build();
+}
+
+@PostMapping("/admin/moderate/{imageId}")
+@PreAuthorize("hasRole('ROLE_ADMIN')")
+public ResponseEntity<Void> moderateImage(
+        @PathVariable Integer imageId,
+        @RequestParam Boolean approve) {
+    if (approve) {
+        placeImageService.approveImage(imageId);
+    } else {
         placeImageService.rejectImage(imageId);
-        return ResponseEntity.ok().build();
     }
+    return ResponseEntity.ok().build();
+}
+
+@GetMapping("/admin/pending")
+@PreAuthorize("hasRole('ROLE_ADMIN')")
+public ResponseEntity<List<PlaceImageResponse>> getPendingImages() {
+    return ResponseEntity.ok(placeImageService.getPendingImages());
+}
 
     @PostMapping("/{userId}/{imageId}/like")
     public ResponseEntity<Void> addLike(
