@@ -8,6 +8,12 @@ import com.gather_club_back.gather_club_back.enums.Role;
 import com.gather_club_back.gather_club_back.jwt.JwtTokenProvider;
 import com.gather_club_back.gather_club_back.mapper.UserMapper;
 import com.gather_club_back.gather_club_back.repository.UserRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +32,7 @@ import java.time.LocalDateTime;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
+@Tag(name = "Аутентификация", description = "API для регистрации и входа пользователей")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -34,8 +41,20 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
 
+    @Operation(summary = "Вход пользователя", description = "Аутентификация пользователя и получение JWT токена")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Успешная аутентификация", 
+                    content = @Content(schema = @Schema(implementation = JwtAuthenticationResponse.class))),
+        @ApiResponse(responseCode = "401", description = "Неверные учетные данные")
+    })
     @PostMapping("/login")
-    public ResponseEntity<?> authenticateUser(@RequestBody AuthRequest authRequest) {
+    public ResponseEntity<?> authenticateUser(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                description = "Данные для аутентификации пользователя",
+                required = true,
+                content = @Content(schema = @Schema(implementation = AuthRequest.class))
+            )
+            @RequestBody AuthRequest authRequest) {
         log.info("Login attempt for: {}", authRequest.getUsernameOrEmail());
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
@@ -50,8 +69,19 @@ public class AuthController {
         return ResponseEntity.ok(new JwtAuthenticationResponse(jwt));
     }
 
+    @Operation(summary = "Регистрация пользователя", description = "Создание нового аккаунта пользователя")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Пользователь успешно зарегистрирован"),
+        @ApiResponse(responseCode = "400", description = "Некорректные данные или пользователь уже существует")
+    })
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody RegisterRequest registerRequest) {
+    public ResponseEntity<?> registerUser(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                description = "Данные для регистрации нового пользователя",
+                required = true,
+                content = @Content(schema = @Schema(implementation = RegisterRequest.class))
+            )
+            @RequestBody RegisterRequest registerRequest) {
         // Валидация входных данных
         if (registerRequest.getPasswordHash() == null || registerRequest.getPasswordHash().isBlank()) {
             return ResponseEntity.badRequest().body("Password is required");

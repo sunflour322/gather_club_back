@@ -13,4 +13,5 @@ public interface PlaceImageRepository extends JpaRepository<PlaceImage, Integer>
     List<PlaceImage> findByPlacePlaceIdAndIsApprovedTrue(Integer placeId);
     List<PlaceImage> findByUploadedByUserId(Integer userId);
     Optional<PlaceImage> findFirstByPlacePlaceIdAndIsApprovedTrueOrderByUploadedAtDesc(Integer placeId);
+    List<PlaceImage> findByIsApprovedFalseOrderByUploadedAtDesc();
 }

@@ -1,5 +1,6 @@
 package com.gather_club_back.gather_club_back.service;
 
+import com.gather_club_back.gather_club_back.model.MeetupParticipantResponse;
 import com.gather_club_back.gather_club_back.model.MeetupRequest;
 import com.gather_club_back.gather_club_back.model.MeetupResponse;
 
@@ -21,4 +22,8 @@ public interface MeetupService {
     List<MeetupResponse> getArchivedMeetups(Integer userId);
     MeetupResponse acceptInvitation(Integer meetupId, Integer userId);
     MeetupResponse declineInvitation(Integer meetupId, Integer userId);
-} 
+    MeetupResponse cancelMeetup(Integer meetupId, Integer userId);
+    MeetupResponse updateMeetup(Integer meetupId, Integer userId, MeetupRequest request);
+    List<MeetupParticipantResponse> getMeetupParticipants(Integer meetupId);
+    MeetupResponse removeParticipant(Integer meetupId, Integer userId);
+}

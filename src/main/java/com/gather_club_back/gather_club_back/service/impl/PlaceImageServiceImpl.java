@@ -77,7 +77,23 @@ public class PlaceImageServiceImpl implements PlaceImageService {
     @Override
     @Transactional
     public void rejectImage(Integer imageId) {
-        placeImageRepository.deleteById(imageId);
+        PlaceImage image = placeImageRepository.findById(imageId)
+                .orElseThrow(() -> new EntityNotFoundException("Изображение не найдено"));
+        
+        // Удаляем изображение из хранилища
+        try {
+            if (image.getImageUrl() != null) {
+                storageService.deleteImage(image.getImageUrl());
+                log.info("Удалено изображение из хранилища: {}", image.getImageUrl());
+            }
+        } catch (IOException e) {
+            log.error("Ошибка при удалении изображения из хранилища: {}", e.getMessage(), e);
+            // Продолжаем удаление записи из БД даже если не удалось удалить файл
+        }
+        
+        // Удаляем запись из БД
+        placeImageRepository.delete(image);
+        log.info("Отклонено и удалено изображение с ID: {}", imageId);
     }
 
     @Override
@@ -152,7 +168,7 @@ public class PlaceImageServiceImpl implements PlaceImageService {
                 .setImageUrl(imageUrl)
                 .setUploadedBy(user)
                 .setUploadedAt(LocalDateTime.now())
-                .setIsApproved(true)
+                .setIsApproved(false) // Изображение требует одобрения администратором
                 .setLikes(0)
                 .setDislikes(0);
 
@@ -176,6 +192,15 @@ public class PlaceImageServiceImpl implements PlaceImageService {
 
         placeImageRepository.save(image);
         log.info("Rated image {} with {}", imageId, isLike ? "like" : "dislike");
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PlaceImageResponse> getPendingImages() {
+        List<PlaceImage> pendingImages = placeImageRepository.findByIsApprovedFalseOrderByUploadedAtDesc();
+        return pendingImages.stream()
+                .map(placeImageMapper::toModel)
+                .collect(Collectors.toList());
     }
 
     private String generateImageFilename(String originalFilename, Integer placeId) {

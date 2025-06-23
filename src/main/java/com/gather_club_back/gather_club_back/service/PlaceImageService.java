@@ -19,4 +19,5 @@ public interface PlaceImageService {
     PlaceImageResponse uploadPlaceImage(Integer placeId, MultipartFile imageFile, Integer userId) throws IOException;
     void rateImage(Integer imageId, boolean isLike);
     String getMainPlaceImageUrl(Integer placeId);
+    List<PlaceImageResponse> getPendingImages();
 }

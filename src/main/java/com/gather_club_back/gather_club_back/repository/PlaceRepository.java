@@ -19,4 +19,6 @@ public interface PlaceRepository extends JpaRepository<Place, Integer> {
             @Param("maxLat") double maxLat,
             @Param("minLng") double minLng,
             @Param("maxLng") double maxLng);
+            
+    List<Place> findByIsApprovedTrue();
 }
