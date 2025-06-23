@@ -24,3 +24,14 @@ app:
       radius: 100
     participants:
       radius: 100
+
+# Настройки Swagger/OpenAPI
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+    filter: true
+  packages-to-scan: com.gather_club_back.gather_club_back.controller

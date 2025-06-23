@@ -45,8 +45,11 @@ public class SecurityConfig {
                         // Публичные эндпоинты
                         .requestMatchers(
                                 "/auth/**",
+                                "/v3/api-docs/**",
+                                "/v3/api-docs.yaml",
                                 "/api-docs/**",
-                                "/swagger-ui/**"
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
                         ).permitAll()
 
                         // Защищённые эндпоинты

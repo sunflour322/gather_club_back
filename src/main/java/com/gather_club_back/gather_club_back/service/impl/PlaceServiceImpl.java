@@ -48,8 +48,8 @@ public class PlaceServiceImpl implements PlaceService {
     
     @Override
     public List<PlaceResponse> getAllPlaces() {
-        log.debug("Получение всех мест");
-        return placeRepository.findAll().stream()
+        log.debug("Получение всех одобренных мест");
+        return placeRepository.findByIsApprovedTrue().stream()
                 .map(placeMapper::toModel)
                 .collect(Collectors.toList());
     }
@@ -138,6 +138,10 @@ public class PlaceServiceImpl implements PlaceService {
             place.setPopularity(placeRequest.getPopularity());
         }
         
+        if (placeRequest.getImageUrl() != null) {
+            place.setImageUrl(placeRequest.getImageUrl());
+        }
+        
         Place updatedPlace = placeRepository.save(place);
         log.info("Обновлено место с ID: {}", updatedPlace.getPlaceId());
         
@@ -147,24 +151,16 @@ public class PlaceServiceImpl implements PlaceService {
     @Override
     @Transactional
     public void deletePlace(Integer placeId) {
-        log.debug("Удаление места с ID: {}", placeId);
+        log.debug("Логическое удаление места с ID: {}", placeId);
         
         Place place = placeRepository.findById(placeId)
                 .orElseThrow(() -> new RuntimeException("Место не найдено с ID: " + placeId));
         
-        // Удаляем изображение, если есть
-        if (place.getImageUrl() != null) {
-            try {
-                storageService.deleteImage(place.getImageUrl());
-                log.info("Удалено изображение для места {}", placeId);
-            } catch (IOException e) {
-                log.error("Не удалось удалить изображение для места {}", placeId, e);
-                // Продолжаем удаление места даже если не удалось удалить изображение
-            }
-        }
+        // Устанавливаем флаг isApproved в false вместо физического удаления
+        place.setIsApproved(false);
+        placeRepository.save(place);
         
-        placeRepository.delete(place);
-        log.info("Удалено место с ID: {}", placeId);
+        log.info("Место с ID: {} помечено как неодобренное", placeId);
     }
 
     @Override

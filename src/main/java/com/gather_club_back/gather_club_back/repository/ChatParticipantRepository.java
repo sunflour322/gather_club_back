@@ -14,6 +14,7 @@ public interface ChatParticipantRepository extends JpaRepository<ChatParticipant
     List<ChatParticipant> findByUserAndLeftAtIsNull(User user);
     List<ChatParticipant> findByChatAndLeftAtIsNull(Chat chat);
     Optional<ChatParticipant> findByChatAndUserAndLeftAtIsNull(Chat chat, User user);
+    Optional<ChatParticipant> findByChatAndUserAndLeftAtIsNotNull(Chat chat, User user);
     boolean existsByChatAndUserAndLeftAtIsNull(Chat chat, User user);
     boolean existsByChatAndUserAndRoleAndLeftAtIsNull(Chat chat, User user, String role);
-} 
+}

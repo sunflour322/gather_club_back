@@ -14,4 +14,5 @@ public class PlaceRequest {
     private Integer categoryId;
     private Boolean isApproved;
     private Integer popularity;
+    private String imageUrl;
 }

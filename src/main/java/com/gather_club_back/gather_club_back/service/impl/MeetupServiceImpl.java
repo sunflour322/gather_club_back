@@ -4,6 +4,7 @@ import com.gather_club_back.gather_club_back.entity.Meetup;
 import com.gather_club_back.gather_club_back.entity.MeetupParticipant;
 import com.gather_club_back.gather_club_back.entity.Chat;
 import com.gather_club_back.gather_club_back.entity.ChatParticipant;
+import com.gather_club_back.gather_club_back.entity.Message;
 import com.gather_club_back.gather_club_back.entity.User;
 import com.gather_club_back.gather_club_back.entity.Place;
 import com.gather_club_back.gather_club_back.mapper.MeetupMapper;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -34,6 +36,7 @@ public class MeetupServiceImpl implements MeetupService {
     private final PlaceRepository placeRepository;
     private final ChatRepository chatRepository;
     private final ChatParticipantRepository chatParticipantRepository;
+    private final MessageRepository messageRepository;
     private final MeetupMapper meetupMapper;
     private final MeetupParticipantMapper participantMapper;
     private final UserService userService;
@@ -141,7 +144,18 @@ public class MeetupServiceImpl implements MeetupService {
                     .orElseThrow(() -> new EntityNotFoundException("Чат встречи не найден"));
 
             User user = participant.getUser();
-            if (!chatParticipantRepository.existsByChatAndUserAndLeftAtIsNull(chat, user)) {
+            
+            // Проверяем, есть ли участник чата с заполненным полем leftAt
+            Optional<ChatParticipant> existingLeftParticipant = chatParticipantRepository
+                    .findByChatAndUserAndLeftAtIsNotNull(chat, user);
+            
+            if (existingLeftParticipant.isPresent()) {
+                // Если участник найден, очищаем поле leftAt
+                ChatParticipant chatParticipant = existingLeftParticipant.get();
+                chatParticipant.setLeftAt(null);
+                chatParticipantRepository.save(chatParticipant);
+            } else if (!chatParticipantRepository.existsByChatAndUserAndLeftAtIsNull(chat, user)) {
+                // Если участника нет (ни с leftAt, ни без), создаем нового
                 ChatParticipant chatParticipant = new ChatParticipant()
                         .setChat(chat)
                         .setUser(user)
@@ -242,7 +256,7 @@ public class MeetupServiceImpl implements MeetupService {
                     Meetup meetup = participant.getMeetup();
                     List<MeetupParticipantResponse> meetupParticipants = participantRepository
                             .findByMeetupMeetupId(meetup.getMeetupId())
-                .stream()
+                            .stream()
                             .map(participantMapper::toModel)
                             .collect(Collectors.toList());
                     return meetupMapper.toModel(meetup, meetupParticipants);
@@ -318,4 +332,156 @@ public class MeetupServiceImpl implements MeetupService {
     public MeetupResponse declineInvitation(Integer meetupId, Integer userId) {
         return updateParticipantStatus(meetupId, userId, "declined");
     }
-} 
+    
+    @Override
+    @Transactional
+    public MeetupResponse cancelMeetup(Integer meetupId, Integer userId) {
+        Meetup meetup = meetupRepository.findById(meetupId)
+                .orElseThrow(() -> new EntityNotFoundException("Встреча не найдена"));
+        
+        // Проверяем, что пользователь является создателем встречи
+        if (!meetup.getCreator().getUserId().equals(userId)) {
+            throw new IllegalArgumentException("Только создатель встречи может отменить встречу");
+        }
+        
+        // Изменяем статус встречи на "cancelled"
+        meetup.setStatus("cancelled");
+        meetup = meetupRepository.save(meetup);
+        
+        List<MeetupParticipantResponse> participants = participantRepository
+                .findByMeetupMeetupId(meetup.getMeetupId())
+                .stream()
+                .map(participantMapper::toModel)
+                .collect(Collectors.toList());
+        
+        return meetupMapper.toModel(meetup, participants);
+    }
+    
+    @Override
+    @Transactional
+    public MeetupResponse updateMeetup(Integer meetupId, Integer userId, MeetupRequest request) {
+        Meetup meetup = meetupRepository.findById(meetupId)
+                .orElseThrow(() -> new EntityNotFoundException("Встреча не найдена"));
+        
+        // Проверяем, что пользователь является создателем встречи
+        if (!meetup.getCreator().getUserId().equals(userId)) {
+            throw new IllegalArgumentException("Только создатель встречи может редактировать встречу");
+        }
+        
+        // Обновляем место, если оно изменилось и существует
+        if (request.getPlaceId() != null && !request.getPlaceId().equals(meetup.getPlace().getPlaceId())) {
+            Place place = placeRepository.findById(request.getPlaceId())
+                    .orElseThrow(() -> new EntityNotFoundException("Место не найдено с ID: " + request.getPlaceId()));
+            
+            // Проверяем, что место одобрено
+            if (place.getIsApproved() == null || !place.getIsApproved()) {
+                throw new IllegalArgumentException("Место с ID: " + request.getPlaceId() + " не одобрено");
+            }
+            
+            meetup.setPlace(place);
+        }
+        
+        // Обновляем основные данные встречи
+        if (request.getName() != null) {
+            meetup.setName(request.getName());
+            
+            // Обновляем название чата встречи, если оно изменилось
+            Chat chat = chatRepository.findByMeetupMeetupId(meetupId)
+                    .orElseThrow(() -> new EntityNotFoundException("Чат встречи не найден"));
+            chat.setName(request.getName());
+            chatRepository.save(chat);
+        }
+        
+        if (request.getDescription() != null) {
+            meetup.setDescription(request.getDescription());
+        }
+        
+        if (request.getScheduledTime() != null) {
+            meetup.setScheduledTime(request.getScheduledTime());
+        }
+        
+        meetup = meetupRepository.save(meetup);
+        
+        // Приглашаем новых участников, если они указаны
+        if (request.getInvitedUserIds() != null && !request.getInvitedUserIds().isEmpty()) {
+            inviteParticipants(meetup.getMeetupId(), request.getInvitedUserIds());
+        }
+        
+        List<MeetupParticipantResponse> participants = participantRepository
+                .findByMeetupMeetupId(meetup.getMeetupId())
+                .stream()
+                .map(participantMapper::toModel)
+                .collect(Collectors.toList());
+        
+        return meetupMapper.toModel(meetup, participants);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public List<MeetupParticipantResponse> getMeetupParticipants(Integer meetupId) {
+        // Проверяем, существует ли встреча
+        if (!meetupRepository.existsById(meetupId)) {
+            throw new EntityNotFoundException("Встреча с ID " + meetupId + " не найдена");
+        }
+        
+        // Получаем всех участников встречи
+        return participantRepository
+                .findByMeetupMeetupId(meetupId)
+                .stream()
+                .map(participantMapper::toModel)
+                .collect(Collectors.toList());
+    }
+    
+    @Override
+    @Transactional
+    public MeetupResponse removeParticipant(Integer meetupId, Integer userId) {
+        // Проверяем, существует ли встреча
+        Meetup meetup = meetupRepository.findById(meetupId)
+                .orElseThrow(() -> new EntityNotFoundException("Встреча не найдена"));
+        
+        // Проверяем, является ли пользователь участником встречи
+        MeetupParticipant participant = participantRepository
+                .findByMeetupMeetupIdAndUserUserId(meetupId, userId)
+                .orElseThrow(() -> new EntityNotFoundException("Участник не найден"));
+        
+        // Удаляем участника встречи
+        participantRepository.delete(participant);
+        
+        // Находим чат, связанный с этой встречей
+        Chat chat = chatRepository.findByMeetupMeetupId(meetupId)
+                .orElseThrow(() -> new EntityNotFoundException("Чат встречи не найден"));
+        
+        // Находим участника чата
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+        
+        // Помечаем участника чата как покинувшего чат
+        ChatParticipant chatParticipant = chatParticipantRepository
+                .findByChatAndUserAndLeftAtIsNull(chat, user)
+                .orElse(null);
+        
+        if (chatParticipant != null) {
+            chatParticipant.setLeftAt(LocalDateTime.now());
+            chatParticipantRepository.save(chatParticipant);
+            
+            // Добавляем системное сообщение о том, что пользователь покинул чат
+            Message systemMessage = new Message()
+                    .setChat(chat)
+                    .setSender(meetup.getCreator()) // Отправитель - создатель встречи
+                    .setContent(user.getUsername() + " покинул(а) встречу")
+                    .setSentAt(LocalDateTime.now())
+                    .setIsSystem(true);
+            
+            messageRepository.save(systemMessage);
+        }
+        
+        // Получаем обновленный список участников
+        List<MeetupParticipantResponse> participants = participantRepository
+                .findByMeetupMeetupId(meetupId)
+                .stream()
+                .map(participantMapper::toModel)
+                .collect(Collectors.toList());
+        
+        return meetupMapper.toModel(meetup, participants);
+    }
+}
